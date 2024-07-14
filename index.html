@@ -1,10 +1,12 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>WebSocket Chat</title>
 </head>
+
 <body>
     <h1>WebSocket Chat</h1>
     <div id="chat">
@@ -14,18 +16,57 @@
     </div>
 
     <script>
-        const ws = new WebSocket('https://chat-app-r1kh.onrender.com');
+        async function init() {
+            const res = await fetch('http://localhost:443/api/auth/login', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                   
+                },
+                body: JSON.stringify({
+                    "username": "test2",
+                    "password": "123456"
+                }),
+            })
+            for (const pair of res.headers.entries()) {
+                console.log(`${pair[0]}: ${pair[1]}`);
+            }
+
+
+            setInterval(async ()=>{
+                const res = await fetch('http://localhost:443/api/auth/authenticate', {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'credentials': 'include'
+                   
+                }
+            })
+            for (const pair of res.headers.entries()) {
+                console.log(`${pair[0]}: ${pair[1]}`);
+            }
+            }, 2000)
+
+        }
+
+        init()
+
+        const ws = new WebSocket('ws://localhost:443/gateway', ['jwtauth']);
 
         ws.onopen = function () {
             console.log('Connected to the server');
         };
 
         ws.onmessage = function (event) {
-            const messagesDiv = document.getElementById('messages');
-            const message = document.createElement('div');
-            message.textContent = event.data;
-            console.log(event, event.data)
-            messagesDiv.appendChild(message);
+            event = JSON.parse(event)
+            if (event.Type == 'MessageRecieved') {
+                const messagesDiv = document.getElementById('messages');
+                const message = document.createElement('div');
+                message.textContent = event.Data.text_content;
+                console.log(event, event.Data)
+                messagesDiv.appendChild(message);
+            }
+
         };
 
         ws.onclose = function () {
@@ -40,4 +81,5 @@
         };
     </script>
 </body>
+
 </html>
