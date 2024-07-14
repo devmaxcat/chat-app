@@ -17,7 +17,7 @@
 
     <script>
         async function init() {
-            const res = await fetch('https://chat-app-r1kh.onrender.com/api/auth/login', {
+            const res = await fetch('http://localhost:443/api/auth/login', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -34,7 +34,7 @@
 
 
             setInterval(async ()=>{
-                const res = await fetch('https://chat-app-r1kh.onrender.com/api/auth/authenticate', {
+                const res = await fetch('http://localhost:443/api/auth/authenticate', {
                 method: 'GET',
                 headers: {
                     'Content-Type': 'application/json',
