@@ -16,13 +16,17 @@
     </div>
 
     <script>
+         const messagesDiv = document.getElementById('messages');
+         let lastknownmessageid = null
         async function init() {
             const res = await fetch('http://localhost:443/api/auth/login', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                   
+
+
                 },
+                credentials: 'include',
                 body: JSON.stringify({
                     "username": "test2",
                     "password": "123456"
@@ -33,38 +37,50 @@
             }
 
 
-            setInterval(async ()=>{
-                const res = await fetch('http://localhost:443/api/auth/authenticate', {
-                method: 'GET',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'credentials': 'include'
-                   
-                }
-            })
-            for (const pair of res.headers.entries()) {
-                console.log(`${pair[0]}: ${pair[1]}`);
-            }
+            setInterval(() => {
+
+
             }, 2000)
+        }
+        init()
+
+        function createMessage(messageData) {
+           
+            const message = document.createElement('div');
+            message.textContent = messageData.text_content;
+            return message
 
         }
 
-        init()
+        function appendMessageHistory(messages) {
+            let ms = []
+            messages.forEach(element => {
+                messagesDiv.prepend(createMessage(element));
+                lastknownmessageid = element._id
+                console.log(lastknownmessageid)
+            });
+            return ms
+        }
 
         const ws = new WebSocket('ws://localhost:443/gateway', ['jwtauth']);
 
         ws.onopen = function () {
             console.log('Connected to the server');
+            const message = JSON.stringify({ Type: 'RetrieveHistory', Data: { channel_id: '669382bf1fa2e3290ce6a2af', eldest_known_message_id: lastknownmessageid } })
+            ws.send(message);
         };
 
         ws.onmessage = function (event) {
-            event = JSON.parse(event)
+
+            event = JSON.parse(event.data)
             if (event.Type == 'MessageRecieved') {
-                const messagesDiv = document.getElementById('messages');
-                const message = document.createElement('div');
-                message.textContent = event.Data.text_content;
-                console.log(event, event.Data)
-                messagesDiv.appendChild(message);
+                let M = createMessage(event.Data)
+                messagesDiv.appendChild(M);
+
+            }
+            if (event.Type == 'History') {
+                appendMessageHistory(event.Data)
+                console.log(event)
             }
 
         };
@@ -75,7 +91,7 @@
 
         document.getElementById('sendButton').onclick = function () {
             const input = document.getElementById('messageInput');
-            const message = input.value;
+            const message = JSON.stringify({ Type: 'MessageSent', Data: { text_content: input.value } })
             ws.send(message);
             input.value = '';
         };
