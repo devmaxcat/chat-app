@@ -4,6 +4,7 @@
 ### Focuses
 
 - Scalability (even if just a demo)
+- Cybersecurity
 - User Experience
 - Learning Web Sockets and Express.
 - Object-Oriented Programming
