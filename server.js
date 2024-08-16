@@ -31,6 +31,7 @@ const app = express()
 
 app.use(cookies());
 app.use(express.json()); 
+
 app.use(express.urlencoded({
   extended: true
 }));
