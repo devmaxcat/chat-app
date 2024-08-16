@@ -14,6 +14,11 @@
         <input type="text" id="messageInput" placeholder="Type a message...">
         <button id="sendButton">Send</button>
     </div>
+    <style>
+        .message {
+            padding: 1em
+        }
+    </style>
 
     <script>
          const messagesDiv = document.getElementById('messages');
@@ -47,6 +52,7 @@
         function createMessage(messageData) {
            
             const message = document.createElement('div');
+            message.classList.add('message')
             message.textContent = messageData.text_content;
             return message
 
@@ -64,8 +70,36 @@
 
         const ws = new WebSocket('ws://localhost:443/gateway', ['jwtauth']);
 
-        ws.onopen = function () {
+        ws.onopen = async function () {
             console.log('Connected to the server');
+
+            fetch('http://localhost:443/api/channel/get?' + new URLSearchParams({
+                   // cursorid: lastknownmessageid,
+                    //channelid: '669819f89601761de9c47648'
+                }), 
+                {
+                    credentials: 'include'
+                } 
+            )
+            .then((res) => res.json())
+            .then((data) => {
+                console.log(data)
+            })
+         
+            fetch('http://localhost:443/api/message/history?' + new URLSearchParams({
+                    cursorid: lastknownmessageid,
+                    channelid: '669819f89601761de9c47648'
+                }), 
+                {
+                    credentials: 'include'
+                } 
+            )
+            .then((res) => res.json())
+            .then((data) => {
+                appendMessageHistory(data)
+            })
+               
+            
             const message = JSON.stringify({ Type: 'RetrieveHistory', Data: { channel_id: '669382bf1fa2e3290ce6a2af', eldest_known_message_id: lastknownmessageid } })
             ws.send(message);
         };
@@ -86,7 +120,7 @@
         };
 
         ws.onclose = function () {
-            console.log('Disconnected from the server');
+            console.log('Disconnected from the server'); // reload application
         };
 
         document.getElementById('sendButton').onclick = function () {
