@@ -13,8 +13,15 @@ module.exports = async function connectDB() {
 Redis = require("ioredis").Redis;
 createAdapter = require("@socket.io/redis-adapter").createAdapter
 
-const pubClient = new Redis();
+const pubClient = new Redis(process.env.REDIS_CONNECTION);
 const subClient = pubClient.duplicate();
 
 module.exports.redisadapter = createAdapter(pubClient, subClient)
 
+pubClient.on("error", (err) => {
+  console.log(err);
+});
+
+subClient.on("error", (err) => {
+  console.log(err);
+});
