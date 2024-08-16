@@ -4,8 +4,8 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "start": "node server.js",
-    "build": "cd front && npm run build",
+    "start": "npm i && node server.js",
+    "build": "npm i && cd front && npm i && npm run build",
     "dev": "nodemon server.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
