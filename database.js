@@ -1,7 +1,5 @@
 const Mongoose = require("mongoose")
 
-
-
 const localDB = process.env.DB_CONNECTION 
 
 module.exports = async function connectDB() {
