@@ -21,11 +21,11 @@ export default function Login() {
         formState: { errors },
     } = useForm()
 
-    const onSubmit = async (data) => {
+    const onSubmit = async (form) => {
         setResponseError('')
-        let data = await requester(true, '/api/auth/login', 'POST', true)
+        let data = await requester(true, '/api/auth/login', 'POST', true, {username: form.username, password: form.password})
         if (!data.error) {
-            await userData.refresh()
+            await userData.refreshUser()
             navigate('/me')
         } else {
             setResponseError(data.message)

@@ -2,6 +2,7 @@ import React, { useContext, useEffect, useRef, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router'
 import { ClientContext, Alert, AlertContext } from '../Chat'
 import { UserContext } from '../App'
+import ContextMenuButton, { ContextMenu, CreateMenu } from '../ContextMenu'
 
 export default function Friends() {
     const [friendReqs, setFriendReqs] = useState([])
@@ -160,6 +161,7 @@ function Friend({ data }) {
         if (data.from._id == userData._id) {
             // outgoing
             return (
+
                 <div className='friend'>
                     <div className='profile-small'>
                         <div className='pfp'>
@@ -172,6 +174,7 @@ function Friend({ data }) {
                         cancel
                     </span>
                 </div>
+
             )
         } else {
             // incoming
@@ -196,15 +199,17 @@ function Friend({ data }) {
     } else {
         let friendedUser = data.from._id == userData._id ? data.to : data.from
         return (
-            <div className='friend'>
-                <div className='profile-small'>
-                    <div className='pfp'>
-                        <img src={friendedUser?.icon || '/default-user-pfp.webp'}></img>
+            <ContextMenuButton menu={new CreateMenu([], 'meow')}>
+                <div className='friend'>
+                    <div className='profile-small'>
+                        <div className='pfp'>
+                            <img src={friendedUser?.icon || '/default-user-pfp.webp'}></img>
 
+                        </div>
+                        {friendedUser.username}
                     </div>
-                    {friendedUser.username}
                 </div>
-            </div>
+            </ContextMenuButton>
         )
     }
 

@@ -9,22 +9,30 @@ import Settings from './Pages/Settings';
 import Auth from './Auth/Auth';
 
 export const UserContext = React.createContext(null)
-export const RequestContext = React.createContext(async (isApi, resourceUri, method, expectJson) => {
-    let URL = isApi ? process.env.REACT_APP_API_URL + resourceUri : resourceUri
+export const RequestContext = React.createContext(async (isApi, resourceUri, method, expectJson, body) => {
+    let URL = isApi ? 'http://localhost:443' + resourceUri : resourceUri
+    let response;
+    console.log(URL)
     try {
         let res = await fetch(URL, {
             method,
             credentials: isApi ? 'include' : 'omit',
+            body: body ? JSON.stringify(body) : null,
+            headers: {
+                'content-type': 'application/json'
+            }
         })
         if (expectJson) {
             let data = await res.json()
-            return data
+            response = data
         } else {
-            return res
+            response = res
         }
     } catch {
+        response = { error: 'Fetch failed', status: 500 }
         console.error('Something went wrong, fetch to: "' + URL + '" Failed.')
     }
+    return response
 })
 
 export default function App() {
@@ -62,6 +70,7 @@ function Bootstrapper() { // Ensures the client has accurate data from the serve
         let data = await requester(true, '/api/auth/self', 'GET', true)
         if (!data.error) {
             data.refresh = updateUserContext
+            data.refreshUser = updateUserContext
             setuserdata(data)
         } else if (data.error == 'Unauthorized') {
             setuserdata({ error: 'Unauthorized', refreshUser: updateUserContext })

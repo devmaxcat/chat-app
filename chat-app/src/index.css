@@ -419,8 +419,7 @@ code {
 
   animation: sidebar-in 1s;
   min-width: fit-content;
-  overflow-x: hidden;
-  overflow-y: auto;
+  overflow: hidden;
 }
 
 @keyframes sidebar-in {
@@ -433,8 +432,9 @@ code {
   display: flex;
   flex-direction: column;
 
-
-
+  overflow-y: auto;
+  height: 100%;
+  margin-bottom: .9rem;
 }
 
 #channels>a {
@@ -1281,6 +1281,7 @@ textarea:focus {
 
 .flex-pusher-vert {
   height: 100%;
+  display: none;
 }
 
 .settings {
