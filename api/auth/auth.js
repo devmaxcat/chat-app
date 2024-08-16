@@ -1,27 +1,83 @@
-const User = require("../../schemas/User")
-const session = require('../../session')
+const {User, ExposableFields} = require("../../schemas/User")
+
 const jwt = require('jsonwebtoken')
 const jwtSecret = process.env.JWT_SECRET  
 const bcrypt = require("bcrypt")
+const { Mongoose } = require("mongoose")
+
+exports.self = async (req, res, next) => {
+ 
+  let sessionData = req.session?.user
+  if (!sessionData) {
+    res.status(401).json({
+      message: 'User is not logged in',
+      error: 'Unauthorized'
+    })
+    return
+  }
+  let user = await User.findById(sessionData.id)
+  if (!user) {
+    res.status(401).json({
+      message: 'Session token invalid',
+      error: 'Unauthorized'
+    })
+    return
+  }
+  // while information IS stored in the cookie, that information can be outdated.
+  // The id field is the only cookie field which is always right.
+  sessionData.id = user._id // accessible client as sessionData.id OR sessionData._id
+  sessionData.icon = user.icon
+  sessionData.username = user.username
+  sessionData.displayName = user.displayName
+  sessionData.bio = user.bio
+  sessionData.joindate = user.createdAt
+  res.status(200).json(sessionData)
+ 
+}
 
 exports.authenticate = async (req, res, next) => { 
- 
-  if (await session.current(req)) {
-    res.status(200)
-    
-  } else {
-    return res.status(401).json({ message: "Not authorized" })
+  
+  let sessionData = req.session?.user  // await session.refresh(req, res)
+  if (!sessionData) {
+    res.status(401).json({
+      message: 'User is not logged in',
+      error: 'Unauthorized'
+    })
+    return
   }
+  let user = await User.findById(sessionData._id)
+  if (!user) {
+    res.status(401).json({
+      message: 'Session token invalid',
+      error: 'Unauthorized'
+    })
+    return
+  }
+
+  //session.refresh(req, res)
+
+  User.updateOne({_id: user._id}, {lastActive: new Date().toISOString()})
+  req.session.user = user
+  
+  //req.session.user = sessionData
+
+  next()
 }
 
 exports.register = async (req, res, next) => { 
   const { username, password } = req.body
 
   if (!username || !password) {
-    return res.status(400).json({ message: "No username/password provided." })
+    return res.status(400).json({
+      message: "Please fill out all required fields.",
+      error: "Bad Request",
+    })
   }
   if (password.length < 6) {
-    return res.status(400).json({ message: "Password less than 6 characters" })
+    return res.status(400).json({
+      message: "Password must be at least 6 characters.",
+      error: "Bad Request",
+    })
   }
    
   bcrypt.hash(password, 10).then(async (hash) => {
@@ -29,16 +85,20 @@ exports.register = async (req, res, next) => {
       username,
       password: hash,
     })
-      .then((user) => {
-        session.setsession(req, res,  { id: user._id, username, role: user.role })
+      .then(async (user) => {
+        
+        //await session.createsession(req, res, user)
+        req.session.user = user
+      
+
         res.status(201).json({
-          message: "User successfully created",
+          message: "User successfully created.",
           user: user._id,
         });
       })
       .catch((error) =>
-        res.status(400).json({
-          message: "User not successful created",
+        res.status(500).json({
+          message: "User creation failed",
           error: error.message,
         })
       );
@@ -46,7 +106,7 @@ exports.register = async (req, res, next) => {
 };
 
 exports.logout = async (req, res, next) => {
-  session.destroysession(res)
+  await req.session.destroy();
   res.status(200).json({
     message: "User logged out",
   });
@@ -54,31 +114,42 @@ exports.logout = async (req, res, next) => {
 
 exports.login = async (req, res, next) => {
   
+ 
   const { username, password } = req.body
   // Check if username and password is provided
   if (!username || !password) {
     return res.status(400).json({
-      message: "Username or Password not present",
+      message: "Please provide username and password.",
+      error: "Bad Request",
     })
   }
   try {
     const user = await User.findOne({ username })
     if (!user) {
-      res.status(400).json({
-        message: "Login not successful",
-        error: "User not found",
+      res.status(401).json({
+        message: "Incorrect username or password.",
+        error: "Login Failed",
       })
     } else {
       // comparing given password with hashed password
-      bcrypt.compare(password, user.password).then(function (result) {
+      bcrypt.compare(password, user.password).then(async function (result) {
         if (result) {
-          session.setsession(req, res,  { id: user._id, username, role: user.role })
+
+          //await session.createsession(req, res, user)
+          
+          req.session.user = user
+         
+          
+
           res.status(200).json({
-            message: "User successfully Logged in",
+            message: "Login successful.",
             user: user._id, 
           });
         } else {
-          res.status(400).json({ message: "Login not succesful" });
+          res.status(401).json({
+            message: "Incorrect username or password.",
+            error: "Login Failed",
+          })
         }
       });
     }
