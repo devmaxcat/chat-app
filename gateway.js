@@ -12,18 +12,10 @@ const { resolve } = require('./api/message/message')
 const { redis } = require('./database');
 const FriendRequest = require('./schemas/FriendRequest');
 
-// module.exports.getActiveClients = function () {
-//   return activeClients
-// } -- this might be unneeded...??
-
-
 module.exports = async (socket, io) => {
-  //console.log(socket.request)
-  // const sessionData = await session.current(socket.request);
   let sessionData = socket.request.session.user;
   let user = socket.request.session.user;
-  //const user = await User.findOne({ _id: sessionData.id })
-  //console.log(sessionData)
+ 
   if (!(sessionData && user)) {
     return
   }
@@ -36,20 +28,15 @@ module.exports = async (socket, io) => {
 
   socket.on('MessageSent', async (data) => {
     let message = await Message.findById(data._id).populate('author', ExposableFields, User)
-    console.log('sending to ... ' + message.channel_id.toString())
     io.to(message.channel_id.toString()).emit("MessageRecieved", message)
-
   })
 
   socket.on('FriendRequestSent', async (data) => {
     let request = await FriendRequest.findById(data._id).populate('to from', ExposableFields, User)
-    console.log('transmitting req to: ' + request.to._id.toString())
-
     io.to(request.to._id.toString()).to(request.from._id.toString()).emit("FriendRequestRecieved", request)
   })
 
   socket.on('FriendRequestResponse', async (data) => {
-
     const id = data.id
     const newStatus = data.status
 
@@ -58,16 +45,16 @@ module.exports = async (socket, io) => {
     })
 
     if (request.from.equals(user._id)) {
-      if (newStatus != status.CANCELLED) {
+      if (newStatus != 3) {
         socket.emit({ error: 'Invalid Action', message: "As the sender, you cannot perform this action" })
         return
       }
     } else if (request.to.equals(user._id)) {
-      if (!(newStatus == status.DENIED || newStatus == status.ACCEPTED)) {
+      if (!(newStatus == 2 || newStatus == 1)) {
         socket.emit({ error: 'Invalid Action', message: "As the recipient, you cannot perform this action" })
         return
       }
-      if (newStatus == status.ACCEPTED) {
+      if (newStatus == 1) {
         if (!await Channel.findOne({ recipients: [request.from, request.to], type: 0 })) {
           await Channel.create({
             owner_id: request.from,
@@ -82,6 +69,7 @@ module.exports = async (socket, io) => {
 
     request.status = newStatus
     request.save()
+    io.to(request.to._id.toString()).to(request.from._id.toString()).emit("FriendRequestSent", request)
   })
 
 

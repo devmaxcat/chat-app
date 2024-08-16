@@ -19,9 +19,9 @@ const subClient = pubClient.duplicate();
 module.exports.redisadapter = createAdapter(pubClient, subClient)
 
 pubClient.on("error", (err) => {
-  console.log(err);
+  console.log('CLIENT CONN: An error occurred in publishing: ' + err);
 });
 
 subClient.on("error", (err) => {
-  console.log(err);
+  console.log('CLIENT CONN: An error occurred in subscription: ' + err);
 });

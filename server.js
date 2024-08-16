@@ -1,9 +1,9 @@
-const cloudinary = require('cloudinary')
-const bodyParser = require('body-parser');
-const session = require('express-session')
 const dotenv = require('dotenv');
+const cloudinary = require('cloudinary')
+
 dotenv.config();
 
+const { User } = require('./schemas/User');
 const connectDB = require("./database");
 const redisadapter = require("./database").redisadapter;
 
@@ -13,14 +13,31 @@ cloudinary.config({
   api_secret: process.env.CLOUDINARY_API_SECRET // Click 'View Credentials' below to copy your API secret
 });
 
+const path = require('path');
+const cors = require('cors')
+const cookies = require("cookie-parser");
+const bodyParser = require('body-parser');
+const session = require('express-session')
+
+const corsOptions = {
+  origin: process.env.CORS_ALLOW_ORIGIN,
+  methods: ["GET", "POST"],
+  credentials: true
+};
+
 const express = require("express")
+
 const app = express()
+
+app.use(cookies());
+app.use(express.json()); 
+app.use(express.urlencoded({
+  extended: true
+}));
+app.use(cors(corsOptions));
+
 const http = require('http');
 const server = http.createServer(app);
-
-const path = require('path');
-
-
 
 // This code makes sure that any request that does not matches a static file
 // in the build folder, will just serve index.html. Client side routing is
@@ -37,39 +54,6 @@ const path = require('path');
 // });
 // app.use(express.static(path.join(__dirname, 'build')));
 
-const corsOptions = {
-  origin: process.env.CORS_ALLOW_ORIGIN,
-  methods: ["GET", "POST"],
-  credentials: true
-};
-
-
-
-var io = new require('socket.io')(server, {
-  // rejectUnauthorized: false,
-  origins: process.env.CORS_ALLOW_ORIGIN,
-  cors: corsOptions,
-  allowUpgrades: true,
-  adapter: redisadapter // if there happened to be multiple servers, redis would use its pub/sub infastructure to replicate websocket messages across servers.
-});
-
-const gateway = require('./gateway')
-io.on('connection', (socket) => {
-  socket.onAny((n, data)=>{
-    console.log(n, data)
-  })
-  gateway(socket, io)
-})
-
-
-var cors = require('cors')
-var cookies = require("cookie-parser");
-const { User } = require('./schemas/User');
-
-
-
-app.use(cors(corsOptions));
-
 app.all('/*', function (req, res, next) {
   // res.header("access-control-expose-headers", "Authorization");
   res.setHeader("Access-Control-Allow-Credentials", "true");
@@ -77,16 +61,6 @@ app.all('/*', function (req, res, next) {
   res.setHeader("Access-Control-Allow-Headers", "Access-Control-Allow-Headers, Origin,Accept, X-Requested-With, Content-Type, Access-Control-Request-Method, Access-Control-Request-Headers, Credentials, Authorization");
   next();
 });
-
-app.use(cookies());
-
-app.use(express.json()); // Used to parse JSON bodies
-
-
-// in latest body-parser use like below.
-app.use(express.urlencoded({
-  extended: true
-}));
 
 const sessionware = session({
   name: 'example.sid',
@@ -101,7 +75,7 @@ const sessionware = session({
 });
 
 app.use(sessionware);
-io.engine.use(sessionware);
+
 
 
 app.use("/api/auth", require("./api/auth/route"))
@@ -111,17 +85,27 @@ app.use("/api/friend", require("./api/friends/route"))
 app.use("/api/message", require("./api/message/route"))
 app.use("/api/channel", require("./api/channel/route"))
 
+var io = new require('socket.io')(server, {
+  // rejectUnauthorized: false,
+  origins: process.env.CORS_ALLOW_ORIGIN,
+  cors: corsOptions,
+  allowUpgrades: true,
+  adapter: redisadapter // if there happened to be multiple servers, redis would use its pub/sub infastructure to replicate websocket client connections across servers.
+});
+io.engine.use(sessionware);
 
+const gateway = require('./gateway')
+io.on('connection', (socket) => {
+  gateway(socket, io)
+})
 
 
 
 const PORT = process.env.PORT
 
-
 server.listen(PORT, () => {
   console.log('listening on ${PORT}');
 });
-
 
 process.on("unhandledRejection", err => {
   console.log(`An error occurred: ${err.message}`)
@@ -130,4 +114,4 @@ process.on("unhandledRejection", err => {
 
 connectDB();
 
-User.updateMany({ activityStatus: 1 }, { activityStatus: 0 })
+User.updateMany({}, { activityStatus: 0 })
