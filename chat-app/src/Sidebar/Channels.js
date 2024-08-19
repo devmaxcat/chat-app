@@ -1,26 +1,30 @@
 import { React, useState, useEffect, useContext } from 'react'
 import { Link, useLocation } from 'react-router-dom'
-import { ChannelsContext, ClientContext } from '../Chat'
-import { UserContext } from '../App'
+import { ChannelsContext, ClientContext, FriendsContext } from '../Chat'
+import { ModalService, UserContext } from '../App'
 import ActivityIcon from '../Profile/ActivityIcon'
+import ContextMenuButton, { MenuTemplates } from '../ContextMenu'
+import Friends from '../Pages/Friends'
+import useContextMenu from '../Shared/ContextMenu/useContextMenu'
+import UserContextMenu from '../Shared/ContextMenu/UserContextMenu'
 
 
 export default function Channels() {
     const channels = useContext(ChannelsContext)
     const client = useContext(ClientContext)
 
-   
+
 
     let [sortedChannels, setSortedChannels] = useState(channels)
 
     function updateChannelOrder(data) {
-           if (data) {}
+        if (data) { }
 
     }
 
     useEffect(() => {
         setSortedChannels(channels)
-        
+
         client.on('MessageRecieved', updateChannelOrder)
         return () => client.off('MessageRecieved', updateChannelOrder)
     }, [channels])
@@ -34,7 +38,7 @@ export default function Channels() {
         "Group": (e) => e.type == 1,
     }
 
-    
+
     let filteredChannels = sortedChannels.filter(filters[filter])
 
     return (
@@ -61,6 +65,11 @@ function ChannelItem({ data }) {
     let channelName;
     let channelIconURL;
     let extraclass;
+    const {
+        handleClick,
+        context,
+        open,
+    } = useContextMenu()
     const location = useLocation()
 
     if (location.pathname.includes(`me/channel/${data._id}`)) {
@@ -69,7 +78,7 @@ function ChannelItem({ data }) {
     let DMUser;
     if (data?.type == 0) {
         DMUser = data.recipients.find((e) => e._id != userData._id)
-        channelName = DMUser.username
+        channelName = DMUser?.displayName || DMUser.username
         channelIconURL = DMUser?.icon || '/default-user-pfp.webp'
     } else {
         DMUser = { activityStatus: { statusType: -1 } }
@@ -78,7 +87,9 @@ function ChannelItem({ data }) {
     }
 
     return (
-        <Link className={`channel-selector ${extraclass}`} to={'/me/channel/' + data._id}>
+
+        <Link className={`channel-selector ${extraclass}`} to={'/me/channel/' + data._id} onContextMenu={handleClick()}>
+            <UserContextMenu user={DMUser} context={context} />
             <div class="profile-small">
                 <div class="pfp">
                     <img src={channelIconURL}></img>
@@ -88,5 +99,7 @@ function ChannelItem({ data }) {
             <div className='title'>{channelName}
             </div>
         </Link>
+
+
     )
 }

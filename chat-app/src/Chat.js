@@ -1,14 +1,15 @@
 // This is once the user has been authorized, nothing useful to a do-wronger can be found here so its okay to be on the client.
 import { React, createContext, useContext, useEffect, useState } from 'react'
-import { UserContext } from "./App";
+import { RequestContext, UserContext } from "./App";
 import Sidebar from './Sidebar/Sidebar';
 import Pane from './Pane';
 import ProfileDrop from './ProfileDrop'
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import Call from './Call';
 import { io } from "socket.io-client";
 export const ClientContext = createContext(null)
 export const ChannelsContext = createContext(null)
+export const FriendsContext = createContext(null)
 export const AlertContext = createContext([])
 
 function setActivityStatus(statusType) {
@@ -53,7 +54,11 @@ export class AlertAction {
 }
 
 export default function Chat() {
+    const requester = useContext(RequestContext)
+    const user = useContext(UserContext)
+    const location = useLocation()
     const [channels, setChannels] = useState([])
+    const [friendRequests, setFriendRequests] = useState([])
     const [client, setClient] = useState(null)
     const [alerts, setAlerts] = useState([])
 
@@ -77,36 +82,15 @@ export default function Chat() {
     }
 
     useEffect(() => {
-        function getChannels() {
-            setActivityStatus(1)
-            fetch('http://localhost:443/api/channel/get', {
-                method: 'GET',
-                credentials: 'include'
-            })
-                .then((response) => response.json())
-                .then((data) => {
-                    if (!data.error) {
-                        setChannels(data)
-                    } else {
-                        setChannels(null)
-                    }
 
 
-                })
-
-        }
-        getChannels()
-    }, [])
-
-    useEffect(() => {
-    
         const socket = io.connect('http://localhost:443', {
             withCredentials: true,
             transports: ['websocket']
 
         });
         console.log(socket)
-      
+
         const client = socket
 
         if (client) {
@@ -120,7 +104,7 @@ export default function Chat() {
                 //setActivityStatus(0)
                 console.log('Disconnected from the server: ' + reason); // reload application
                 disconnectedAlert = alert(new Alert('error', 'Lost connection to the server. Things may not work as expected', 'DISCONNECTED', 0, [new AlertAction('primary', () => window.location.reload(), 'Reload')], 3, 100, 'fa-solid fa-plug-circle-exclamation'))
-                
+
             }
 
             socket.on('connect', onConnect);
@@ -136,39 +120,104 @@ export default function Chat() {
 
     }, [])
 
-    if (!client) {
+    useEffect(() => {
+        if (!client) { return }
+        async function refreshChannels() {
+            setActivityStatus(1)
+            let data = await requester(true, '/api/channel/get', 'GET', true)
+
+            if (!data.error) {
+                data.refresh = refreshChannels
+                setChannels(data)
+            } else {
+                setChannels(null)
+            }
+        }
+        async function refreshFriends() {
+            let data = await requester(true, '/api/friend/get', 'GET', true)
+
+            if (!data.error) {
+                data.refresh = refreshFriends
+                data.send = async function (to, useid) {
+                    console.log(to)
+                    let data = await requester(true, '/api/friend/create', 'POST', true, { to: to, useid })
+                    if (!data.error) {
+                        client.emit('FriendRequestSent', data.request)
+                        return {}
+                    } else {
+                        return data
+                    }
+                }
+                data.respond = async function (id, status) {
+                    let data = await requester(true, '/api/friend/respond', 'POST', true, { id, status })
+                    if (!data.error) {
+                        client.emit('FriendRequestSent', data.request)
+                        return {}
+                    } else {
+                        return data
+                    }
+                }
+                data.isFriends = function (otherid) {
+                    console.log(otherid, user._id)
+                    let result = data.find((e) => ((e.from?._id == user?._id && e.to?._id == otherid) || (e.to?._id == user._id && e.from?._id == otherid)))
+                    if (result && result.status == 1) {
+                        return { isfriends: true, result }
+                    } else {
+                        return { isfriends: false, result }
+                    }
+                }
+                setFriendRequests(data)
+            } else {
+                //alerts.alert(new Alert('error', data.error, data.message))
+            }
+
+        }
+        refreshChannels()
+        refreshFriends()
+        client.on('FriendRequestRecieved', refreshFriends)
+        client.on('FriendRequestSent', refreshFriends)
+        return () => {
+            client.off('FriendRequestRecieved', refreshFriends)
+            client.off('FriendRequestSent', refreshFriends)
+
+        }
+    }, [location, client])
+
+    if (!(client && friendRequests && friendRequests.isFriends && channels)) {
         return
     }
 
     return (
         <ClientContext.Provider value={client}>
             <ChannelsContext.Provider value={channels}>
-                <AlertContext.Provider value={{ alerts, alert, dismiss, Alert, AlertAction }}>
-                    <div id='app-outer'>
-                        <div className='alerts-container'>
-                            {alerts.slice(0, 3).map((e) => <Alerts key={e.id} alert={e}></Alerts>)}
-                        </div>
-
-                        <div id='topbar'>
-                            <div className='logo animated'><a>C</a><a>h</a><a>a</a><a>t</a> <a>A</a><a>p</a><a>p</a>
-                            </div>
-                            <div className='topbar-right'>
-                                <Link className="fa-solid fa-gear i-link settings" to={'/me/settings'}></Link>
-                                <ProfileDrop></ProfileDrop>
-
+                <FriendsContext.Provider value={friendRequests}>
+                    <AlertContext.Provider value={{ alerts, alert, dismiss, Alert, AlertAction }}>
+                        <div id='app-outer'>
+                            <div className='alerts-container'>
+                                {alerts.slice(0, 3).map((e) => <Alerts key={e.id} alert={e}></Alerts>)}
                             </div>
 
+                            <div id='topbar'>
+                                <div className='logo animated'><a>C</a><a>h</a><a>a</a><a>t</a> <a>A</a><a>p</a><a>p</a>
+                                </div>
+                                <div className='topbar-right'>
+                                    <Link className="fa-solid fa-gear i-link settings" to={'/me/settings'}></Link>
+                                    <ProfileDrop></ProfileDrop>
+
+                                </div>
+
+                            </div>
+                            <div id='chat'>
+                                <Call></Call>
+
+                                <Sidebar></Sidebar>
+                                <Pane></Pane>
+
+
+                            </div>
                         </div>
-                        <div id='chat'>
-                            <Call></Call>
-
-                            <Sidebar></Sidebar>
-                            <Pane></Pane>
-
-
-                        </div>
-                    </div>
-                </AlertContext.Provider>
+                    </AlertContext.Provider>
+                </FriendsContext.Provider>
             </ChannelsContext.Provider>
         </ClientContext.Provider>
     )

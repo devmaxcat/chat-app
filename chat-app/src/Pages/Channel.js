@@ -120,7 +120,7 @@ export default function Channel() {
                                 })
                         }
                     }}>
-
+                        { history.length == 0 ? (<div>Send a message!</div>) : '' }
                         {history.map((v, i) => (<Message key={v._id} data={v} previous={history[i + 1]} index={i} history={history} />))}
                         {/* {!reachedEnd ? <MessageSkeletonBuffer key={Math.random()}></MessageSkeletonBuffer> : ''} */}
 

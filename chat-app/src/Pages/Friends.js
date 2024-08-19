@@ -1,49 +1,26 @@
 import React, { useContext, useEffect, useRef, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router'
-import { ClientContext, Alert, AlertContext } from '../Chat'
-import { UserContext } from '../App'
-import ContextMenuButton, { ContextMenu, CreateMenu } from '../ContextMenu'
+import { ClientContext, Alert, AlertContext, FriendsContext } from '../Chat'
+import { ModalService, UserContext } from '../App'
+import ContextMenuButton, { ContextMenu, CreateContextItem, CreateMenu } from '../ContextMenu'
+import { MenuTemplates } from '../ContextMenu'
+import useContextMenu from '../Shared/ContextMenu/useContextMenu'
+import UserContextMenu from '../Shared/ContextMenu/UserContextMenu'
 
 export default function Friends() {
-    const [friendReqs, setFriendReqs] = useState([])
+    const friendReqs = useContext(FriendsContext)
     const location = useLocation()
     const client = useContext(ClientContext)
     const userData = useContext(UserContext)
     const alerts = useContext(AlertContext)
     const [filter, setFilter] = useState('AllFriends')
 
-
-    useEffect(() => {
-        function refresh(data) {
-            console.log('friend req', data)
-            fetch('http://localhost:443/api/friend/get', {
-                headers: {
-                    'content-type': 'application/json'
-                },
-                method: 'GET',
-                credentials: 'include',
-            })
-                .then((res) => res.json())
-                .then((data) => {
+    if (!friendReqs.isFriends) {
+        return
+    }
 
 
-                    if (!data.error) {
-                        setFriendReqs(data)
-                    } else {
-                        alerts.alert(new Alert('error', data.error, data.message))
-                    }
-                })
-        }
-        refresh()
 
-
-        client.on('FriendRequestRecieved', refresh)
-
-        return () => {
-            client.off('FriendRequestRecieved', refresh)
-
-        }
-    }, [client, location])
 
     let filteredList;
     let AllFriends = friendReqs.filter((e) => e.status == 1);
@@ -90,6 +67,7 @@ export default function Friends() {
 
 function AddFriendSubMenu() {
     const client = useContext(ClientContext)
+    const friends = useContext(FriendsContext)
     const [responseError, setResponseError] = useState('')
     return (
         <div className='add-friend'>
@@ -97,72 +75,36 @@ function AddFriendSubMenu() {
                 <div className='input-wrapper'>
                     <input autoComplete='off' placeholder='Enter username or ID' id='friend-request-input' ></input>
                 </div>
-                <button className={`action-button ${responseError ? 'shake-error' : ''}`} onClick={() => {
+                <button className={`action-button ${responseError ? 'shake-error' : ''}`} onClick={async () => {
                     setResponseError('')
-                    fetch('http://localhost:443/api/friend/create', {
-                        headers: {
-                            'content-type': 'application/json'
-                        },
-                        method: 'POST',
-                        credentials: 'include',
-                        body: JSON.stringify({ to: document.querySelector('#friend-request-input').value })
-                    })
-                        .then((res) => res.json())
-                        .then((data) => {
-                            if (!data.error) {
-
-
-
-                                client.emit('FriendRequestSent', data.request)
-
-
-                            } else {
-                                setResponseError(data.message)
-                            }
-
-                        })
+                    let response = await friends.send(document.querySelector('#friend-request-input').value)
+                    if (response?.error) { setResponseError(response.message) }
                 }}  >SEND</button>
             </div>
-
-
             <div className='error w-button'>{responseError}</div>
-
-
         </div>
     )
 }
 
-function UpdateExistingRequest(id, status, client) {
 
-    fetch('http://localhost:443/api/friend/respond', {
-        headers: {
-            'content-type': 'application/json'
-        },
-        method: 'POST',
-        credentials: 'include',
-        body: JSON.stringify({ id, status })
-    })
-        .then((res) => res.json())
-        .then((data) => {
-            if (!data.error) {
-                client.emit('FriendRequestSent', data.request)
-            } else {
-
-            }
-
-        })
-}
 
 
 function Friend({ data }) {
     const userData = useContext(UserContext)
-    const client = useContext(ClientContext)
+    const friends = useContext(FriendsContext)
+    const {
+        handleClick,
+        context,
+        open,
+    } = useContextMenu()
+
     if (data.status == 0) {
         if (data.from._id == userData._id) {
             // outgoing
             return (
 
-                <div className='friend'>
+                <div className='friend' onContextMenu={handleClick()}>
+                    <UserContextMenu user={data.to} context={context} />
                     <div className='profile-small'>
                         <div className='pfp'>
                             <img src={data.to?.icon || '/default-user-pfp.webp'}></img>
@@ -170,16 +112,21 @@ function Friend({ data }) {
                         </div>
 
                         {data.to.username}
-                    </div> <span className='round-button' onClick={() => { UpdateExistingRequest(data._id, 3, client) }}>
-                        cancel
-                    </span>
+                    </div>
+                    <div className='buttons'>
+                        <span className='round-button' onClick={() => { friends.respond(data._id, 3) }}>
+                            <i class="fa-regular fa-circle-xmark"></i>
+                        </span>
+                    </div>
+
                 </div>
 
             )
         } else {
             // incoming
             return (
-                <div className='friend'>
+                <div className='friend' onContextMenu={handleClick()}>
+                    <UserContextMenu user={data.from} context={context} />
                     <div className='profile-small'>
                         <div className='pfp'>
                             <img src={data.from?.icon || '/default-user-pfp.webp'}></img>
@@ -187,29 +134,32 @@ function Friend({ data }) {
                         </div>
                         {data.from.username}
                     </div>
-                    <span className='round-button' onClick={() => { UpdateExistingRequest(data._id, 1, client) }}>
-                        accept
-                    </span>
-                    <span className='round-button' onClick={() => { UpdateExistingRequest(data._id, 2, client) }}>
-                        decline
-                    </span>
+                    <div className='buttons'>
+                        <span className='round-button' onClick={() => { friends.respond(data._id, 1) }}>
+                            <i class="fa-solid fa-circle-check"></i>
+                        </span>
+                        <span className='round-button secondary' onClick={() => { friends.respond(data._id, 2) }}>
+                            <i class="fa-regular fa-circle-xmark"></i>
+                        </span>
+                    </div>
+
                 </div>
             )
         }
     } else {
         let friendedUser = data.from._id == userData._id ? data.to : data.from
         return (
-            <ContextMenuButton menu={new CreateMenu([], 'meow')}>
-                <div className='friend'>
-                    <div className='profile-small'>
-                        <div className='pfp'>
-                            <img src={friendedUser?.icon || '/default-user-pfp.webp'}></img>
+            <div className='friend' onContextMenu={handleClick()}>
+                <UserContextMenu user={friendedUser} context={context} />
+                <div className='profile-small'>
+                    <div className='pfp'>
+                        <img src={friendedUser?.icon || '/default-user-pfp.webp'}></img>
 
-                        </div>
-                        {friendedUser.username}
                     </div>
+                    {friendedUser.username}
                 </div>
-            </ContextMenuButton>
+
+            </div>
         )
     }
 

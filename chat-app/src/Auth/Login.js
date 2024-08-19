@@ -13,6 +13,7 @@ export default function Login() {
     const userData = useContext(UserContext)
     const requester = useContext(RequestContext)
     const [responseError, setResponseError] = useState('')
+    const [busy, setBusy] = useState(false)
 
     const {
         register,
@@ -22,8 +23,10 @@ export default function Login() {
     } = useForm()
 
     const onSubmit = async (form) => {
+        setBusy(true)
         setResponseError('')
-        let data = await requester(true, '/api/auth/login', 'POST', true, {username: form.username, password: form.password})
+        let data = await requester(true, '/api/auth/login', 'POST', true, { username: form.username, password: form.password })
+        setBusy(false)
         if (!data.error) {
             await userData.refreshUser()
             navigate('/me')
@@ -56,7 +59,14 @@ export default function Login() {
             </div>
             <span className='form-validator-text'>{errors.password?.message}</span>
 
-            <input type='submit' className='action-button'></input>
+            <button className='action-button' disabled={busy}> 
+                <span className="hide-disable">
+                    Login
+                </span>
+
+                <div className="loader"></div>
+            </button>
+
             <div className='error w-button'>{responseError}</div>
             <div className='oauth'>
                 <div className='divider-text'><span>OR</span></div>
