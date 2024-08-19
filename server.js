@@ -81,7 +81,7 @@ app.use(sessionware);
 
 app.use("/api/auth", require("./api/auth/route"))
 app.use("/api/profile", require("./api/profile/route"))
-
+app.use("/api/user", require("./api/user/route"))
 app.use("/api/friend", require("./api/friends/route"))
 app.use("/api/message", require("./api/message/route"))
 app.use("/api/channel", require("./api/channel/route"))

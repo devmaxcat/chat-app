@@ -47,12 +47,21 @@ const UserSchema = new Mongoose.Schema({
         required: true,
     }
 }, {timestamps: true})
-
+UserSchema.index({username: 'text'});
 const User = Mongoose.model("user", UserSchema)
 const ExposableFields = '_id username displayName icon bio activityStatus createdAt'
-const AssociatedExposableFields = '_id username displayName icon bio activityStatus createdAt' // fields that are exposed when a user is ALSO a friend
+const ExposableFieldsProjection = {
+    _id: true,
+    username: true,
+    displayname: true,
+    icon: true,
+    bio: true,
+    activityStatus: true,
+    createdAt: true
+}
 
 module.exports = User
 module.exports.User = User
 module.exports.ExposableFields = ExposableFields
-module.exports.AssociatedExposableFields = AssociatedExposableFields
+module.exports.ExposableFieldsProjection = ExposableFieldsProjection
+

@@ -10,8 +10,15 @@ exports.get = async (req, res, next) => {
   let sessionData = req.session?.user
   let user = req.session?.user
 
-  let data = await FriendRequest.find({ $and: [{ $or: [{ to: user._id }, { from: user._id }] }/*, {status: 0}*/] }).populate('to', ExposableFields, User).populate('from', ExposableFields, User) // get all friend requests that involve the current user
-
+  let data = await FriendRequest.find({ $and: [{ $or: [{ to: user._id }, { from: user._id }], status: { $nin: [2, 3] } }/*, {status: 0}*/] }).populate('to', ExposableFields, User).populate('from', ExposableFields, User) // get all friend requests that involve the current user
+   // find all requests that aren't cancelled or denied (cancelled or denied requests aren't revealed to any client)
+  
+  // let data = await FriendRequest.find({
+  //   $or: [
+  //     { $and: [{ to: user._id }, { from: to }, { status: { $nin: [2, 3] } }] },
+  //     { $and: [{ to: to }, { from: user._id }, { status: { $nin: [2, 3] } }] }
+  //   ]
+  // })
   res.status(200).json(data)
 }
 
@@ -21,13 +28,13 @@ exports.create = async (req, res, next) => {
   let effectiveStatus = 0
 
   const to = req.body.useid ? new ObjectId(req.body.to) : (await User.findOne({ username: req.body.to }))?._id;
-
+  console.log('to', to)
   let request = await FriendRequest.findOne({
     $or: [
-      { $and: [{ to: user._id }, { from: to }, { status: { $nin: [2, 3] } }] },
-      { $and: [{ to: to }, { from: user._id }, { status: { $nin: [2, 3] } }] }
+      { $and: [{ to: user._id }, { from: to }]},
+      { $and: [{ to: to }, { from: user._id }]}
     ]
-  }) // find all requests that aren't cancelled or denied (cancelled or denied requests aren't revealed to any client)
+  }) 
   let message = 'Unknown error occurred';
 
   if (!to) {
@@ -60,7 +67,7 @@ exports.create = async (req, res, next) => {
 
 
     }
-    else if ((request.status == 3 || request.status == 2) && request.from.equals(user._id)) {
+    else if ((request.status == 3 || request.status == 2)) {
       // req already exists, but was cancelled or denied, reupdate to pending
       message = "Friend request sent!"
       await FriendRequest.updateOne(request, { status: 0 })
@@ -78,7 +85,7 @@ exports.create = async (req, res, next) => {
     else if (request.status == 0 && !request.from.equals(user._id)) {
       // req already exists from other user, assume a mutual want to be friends, set to accepted
       await FriendRequest.updateOne(request, { status: 1 })
-      if (!await Channel.findOne({ recipients: [request.from, request.to], type: 0 })) {
+      if (!await Channel.findOne({ recipients: { $in: [request.from, request.to]} , type: 0 })) {
         await Channel.create({
           owner_id: request.from,
           recipients: [request.from, request.to],
@@ -97,7 +104,9 @@ exports.create = async (req, res, next) => {
   }
 
 
-
+  request.to = to
+  request.from = user._id
+  request.save()
 
   res.status(200).json({
     message: message,
@@ -148,7 +157,7 @@ exports.respond = async (req, res, next) => {
       return
     }
     if (newStatus == status.ACCEPTED) {
-      if (!await Channel.findOne({ recipients: [request.from, request.to], type: 0 })) {
+      if (!await Channel.findOne({ recipients: { $in: [request.from, request.to]} , type: 0 })) {
         await Channel.create({
           owner_id: request.from,
           recipients: [request.from, request.to],
