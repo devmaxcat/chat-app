@@ -116,3 +116,5 @@ process.on("unhandledRejection", err => {
 connectDB();
 
 User.updateMany({}, { activityStatus: 0 })
+
+module.exports.io = io
