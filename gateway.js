@@ -36,54 +36,10 @@ module.exports = async (socket, io) => {
     io.to(request.to._id.toString()).to(request.from._id.toString()).emit("FriendRequestRecieved", request)
   })
 
-  socket.on('FriendRequestResponse', async (data) => {
-    const id = data.id
-    const newStatus = data.status
 
-    let request = await FriendRequest.findOne({
-      _id: id
-    })
-
-    if (request.from.equals(user._id)) {
-      if (newStatus != 3) {
-        socket.emit({ error: 'Invalid Action', message: "As the sender, you cannot perform this action" })
-        return
-      }
-    } else if (request.to.equals(user._id)) {
-      if (!(newStatus == 2 || newStatus == 1)) {
-        socket.emit({ error: 'Invalid Action', message: "As the recipient, you cannot perform this action" })
-        return
-      }
-      if (newStatus == 1) {
-      
-        if (!await Channel.findOne({ recipients: { $in: [request.from, request.to]} , type: 0 })) {
-          await Channel.create({
-            owner_id: request.from,
-            recipients: [request.from, request.to],
-            name: `DM Between ${request.from} & ${request.to}`,
-            type: 0
-          })
-        }
-
-      }
-    }
-
-    request.status = newStatus
-    request.save()
-    io.to(request.to._id.toString()).to(request.from._id.toString()).emit("FriendRequestSent", request)
-  })
 
   socket.on('FriendRequestRemove', async (data) => {
-    const otherid = data.otherid
-    console.log(data)
-    let request = await FriendRequest.findOneAndDelete({
-      $or: [
-        { $and: [{ to: user._id }, { from: otherid }] },
-        { $and: [{ to: otherid}, { from: user._id }] }
-      ]
-    }) 
-    console.log(request)
-    io.to(request.to._id.toString()).to(request.from._id.toString()).emit("FriendRequestSent", request)
+ 
   })
 
 

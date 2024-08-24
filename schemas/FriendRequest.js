@@ -14,10 +14,12 @@ const FriendRequestSchema = new Mongoose.Schema({
     from: { 
         type: ObjectId,
         required: true,
+        ref: 'user'
     },
     to: { 
         type: ObjectId,
         required: true,
+        ref: 'user'
     },
     status: {
         type: Number,

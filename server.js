@@ -3,8 +3,8 @@ const cloudinary = require('cloudinary')
 
 dotenv.config();
 
-const { User } = require('./schemas/User');
-const connectDB = require("./database");
+require("./database")();
+
 const redisadapter = require("./database").redisadapter;
 
 cloudinary.config({
@@ -12,6 +12,8 @@ cloudinary.config({
   api_key: '143783971293183',
   api_secret: process.env.CLOUDINARY_API_SECRET // Click 'View Credentials' below to copy your API secret
 });
+
+
 
 const path = require('path');
 const cors = require('cors')
@@ -77,6 +79,25 @@ const sessionware = session({
 
 app.use(sessionware);
 
+var io = new require('socket.io')(server, {
+  // rejectUnauthorized: false,
+  origins: process.env.CORS_ALLOW_ORIGIN,
+  cors: corsOptions,
+  allowUpgrades: true,
+  adapter: redisadapter // if there happened to be multiple servers, redis would use its pub/sub infastructure to replicate websocket client connections across servers.
+});
+
+module.exports.io = io
+
+io.engine.use(sessionware);
+
+const gateway = require('./gateway')
+io.on('connection', (socket) => {
+  gateway(socket, io)
+})
+
+
+
 
 
 app.use("/api/auth", require("./api/auth/route"))
@@ -86,19 +107,12 @@ app.use("/api/friend", require("./api/friends/route"))
 app.use("/api/message", require("./api/message/route"))
 app.use("/api/channel", require("./api/channel/route"))
 
-var io = new require('socket.io')(server, {
-  // rejectUnauthorized: false,
-  origins: process.env.CORS_ALLOW_ORIGIN,
-  cors: corsOptions,
-  allowUpgrades: true,
-  adapter: redisadapter // if there happened to be multiple servers, redis would use its pub/sub infastructure to replicate websocket client connections across servers.
-});
-io.engine.use(sessionware);
 
-const gateway = require('./gateway')
-io.on('connection', (socket) => {
-  gateway(socket, io)
-})
+
+
+
+
+
 
 
 
@@ -113,8 +127,11 @@ process.on("unhandledRejection", err => {
   server.close(() => process.exit(1))
 })
 
-connectDB();
 
-User.updateMany({}, { activityStatus: 0 })
 
-module.exports.io = io
+
+
+//User.updateMany({}, { activityStatus: 0 })
+
+
+

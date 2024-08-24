@@ -1,9 +1,10 @@
-const session = require('../../session')
-const Message = require('../../schemas/Message')
 const { User, ExposableFields } = require('../../schemas/User')
 const { ObjectId } = require('mongodb')
 const FriendRequest = require('../../schemas/FriendRequest')
 const Channel = require('../../schemas/Channel')
+const { io } = require('../../server')
+
+
 // const activeClients = require('../../gateway').getActiveClients()
 
 exports.get = async (req, res, next) => {
@@ -11,8 +12,8 @@ exports.get = async (req, res, next) => {
   let user = req.session?.user
 
   let data = await FriendRequest.find({ $and: [{ $or: [{ to: user._id }, { from: user._id }], status: { $nin: [2, 3] } }/*, {status: 0}*/] }).populate('to', ExposableFields, User).populate('from', ExposableFields, User) // get all friend requests that involve the current user
-   // find all requests that aren't cancelled or denied (cancelled or denied requests aren't revealed to any client)
-  
+  // find all requests that aren't cancelled or denied (cancelled or denied requests aren't revealed to any client)
+
   // let data = await FriendRequest.find({
   //   $or: [
   //     { $and: [{ to: user._id }, { from: to }, { status: { $nin: [2, 3] } }] },
@@ -23,7 +24,6 @@ exports.get = async (req, res, next) => {
 }
 
 exports.create = async (req, res, next) => {
-  let sessionData = req.session?.user
   let user = req.session?.user
   let effectiveStatus = 0
 
@@ -31,10 +31,10 @@ exports.create = async (req, res, next) => {
   console.log('to', to)
   let request = await FriendRequest.findOne({
     $or: [
-      { $and: [{ to: user._id }, { from: to }]},
-      { $and: [{ to: to }, { from: user._id }]}
+      { $and: [{ to: user._id }, { from: to }] },
+      { $and: [{ to: to }, { from: user._id }] }
     ]
-  }) 
+  })
   let message = 'Unknown error occurred';
 
   if (!to) {
@@ -85,7 +85,7 @@ exports.create = async (req, res, next) => {
     else if (request.status == 0 && !request.from.equals(user._id)) {
       // req already exists from other user, assume a mutual want to be friends, set to accepted
       await FriendRequest.updateOne(request, { status: 1 })
-      if (!await Channel.findOne({ recipients: { $in: [request.from, request.to]} , type: 0 })) {
+      if (!await Channel.findOne({ recipients: { $in: [request.from, request.to] }, type: 0 })) {
         await Channel.create({
           owner_id: request.from,
           recipients: [request.from, request.to],
@@ -93,7 +93,7 @@ exports.create = async (req, res, next) => {
           type: 0
         })
       }
-    
+
       message = "Friend added!"
       effectiveStatus = 1
     }
@@ -113,6 +113,8 @@ exports.create = async (req, res, next) => {
     request: request,
     status: effectiveStatus
   });
+
+  io.to(request.from.toString()).to(request.to.toString()).emit('FriendRequest', request)
 }
 
 const status = {
@@ -122,8 +124,35 @@ const status = {
   CANCELLED: 3, // only set by sender
 }
 
+exports.unfriend = async (req, res, next) => {
+  let user = req.session?.user
+  const { userId } = req.body
+
+  console.log(userId, req.body)
+
+  let request = await FriendRequest.findOneAndDelete({
+    $or: [
+      { $and: [{ to: user._id }, { from: userId }] },
+      { $and: [{ to: userId }, { from: user._id }] }
+    ]
+  })
+  if (request) {
+    io.to(request.to._id.toString()).to(request.from._id.toString()).emit("FriendRequest", request)
+    res.status(200).json({
+      request: request,
+      message: "Action Complete"
+    })
+  } else {
+    res.status(400).json({
+      error: 'Request not found',
+      message: "Request not found. Are you sure you're friends with this user?"
+    })
+  }
+
+
+}
+
 exports.respond = async (req, res, next) => {
-  let sessionData = req.session?.user
   let user = req.session?.user
 
   const id = req.body.id
@@ -157,7 +186,7 @@ exports.respond = async (req, res, next) => {
       return
     }
     if (newStatus == status.ACCEPTED) {
-      if (!await Channel.findOne({ recipients: { $in: [request.from, request.to]} , type: 0 })) {
+      if (!await Channel.findOne({ recipients: { $in: [request.from, request.to] }, type: 0 })) {
         await Channel.create({
           owner_id: request.from,
           recipients: [request.from, request.to],
@@ -177,6 +206,7 @@ exports.respond = async (req, res, next) => {
     status: newStatus,
     message: "Action Complete"
   })
+  io.to(request.from.toString()).to(request.to.toString()).emit('FriendRequest', request)
 }
 
 
