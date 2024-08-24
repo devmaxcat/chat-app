@@ -4,6 +4,8 @@ import { Alert, AlertContext, ChannelsContext, ClientContext } from '../Chat'
 import { UserContext } from '../App'
 import MessageSkeletonBuffer from '../MessageSkeletonBuffer'
 import ActivityIcon from '../Profile/ActivityIcon'
+import UserContextMenu from '../Shared/ContextMenu/UserContextMenu'
+import useContextMenu from '../Shared/ContextMenu/useContextMenu'
 
 
 let reachedEnd = false;
@@ -40,7 +42,7 @@ export default function Channel() {
     //     }
     // }, 'channellistener_deleted')
 
-
+    
     useEffect(() => { historyReference.current = history }, [history])
     useEffect(() => {
 
@@ -142,8 +144,6 @@ export default function Channel() {
                                     .then((res) => res.json())
                                     .then((data) => {
                                         event.target.value = ''
-                                        console.log('sending message ...', data.text_content, client)
-                                        client.emit('MessageSent', data)
                                     })
 
                             }
@@ -235,8 +235,14 @@ function Message({ data, previous, index, history }) {
 
 
 function ChannelMember({ data }) {
+    const {
+        handleClick,
+        context,
+        open,
+    } = useContextMenu()
     return (
-        <div className='profile-small'>
+        <div className='profile-small' onContextMenu={handleClick()}>
+             <UserContextMenu user={data} context={context} />
             <div className='pfp'>
                 <img src={data?.icon || '/default-user-pfp.webp'}></img>
                 <ActivityIcon user={data} />

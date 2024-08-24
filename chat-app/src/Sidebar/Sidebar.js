@@ -21,13 +21,22 @@ export default function Sidebar() {
             <div className={`sidebar-mover ${searching}`}>
                 <div className='channel-selector'><i class="fa-solid fa-message"></i>+ Create New</div>
                 <h3 className='channels-header'>Conversations </h3>
-                <Channels></Channels>
+                <div className='sidebar-opposites'>
+                    <div>
+                    <Channels></Channels>
+                    </div>
+                    <div>
+                    <Link className={`channel-selector ${location.pathname.includes('friends') ? 'focused' : ''}`} to={"/me/friends"}><i class="fa-solid fa-user-plus"></i>Friends</Link>
+                    <Link className={`channel-selector ${location.pathname.includes('alerts') ? 'focused' : ''}`} to={"/me/alerts"}><i class="fa-regular fa-rectangle-list"></i>Change Log</Link>
+                    </div>
+                   
 
 
-                <div className='flex-pusher-vert'></div>
 
-                <Link className={`channel-selector ${location.pathname.includes('friends') ? 'focused' : ''}`} to={"/me/friends"}><i class="fa-solid fa-user-plus"></i>Friends</Link>
-                <Link className={`channel-selector ${location.pathname.includes('alerts') ? 'focused' : ''}`} to={"/me/alerts"}><i class="fa-regular fa-rectangle-list"></i>Change Log</Link>
+
+                  
+                </div>
+
             </div>
 
 

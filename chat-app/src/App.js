@@ -7,11 +7,12 @@ import { BrowserRouter, Link, Outlet, Route, Routes, useLocation, useNavigate } 
 
 import Settings from './Pages/Settings';
 import Auth from './Auth/Auth';
+import Home from './Static/Pages/Home';
 
 export const UserContext = React.createContext(null)
 export const ModalService = React.createContext({})
 export const RequestContext = React.createContext(async (isApi, resourceUri, method, expectJson, body) => {
-    
+
     let URL = isApi ? 'http://localhost:443' + resourceUri : resourceUri
     let response;
     console.log(URL)
@@ -27,14 +28,14 @@ export const RequestContext = React.createContext(async (isApi, resourceUri, met
         if (expectJson) {
             let data = await res.json()
             if (data?.error == 'Unauthorized') {
-           
+
             }
             response = data
         } else {
             response = res
         }
-      
-        
+
+
     } catch {
         response = { error: 'Fetch failed', status: 500 }
         console.error('Something went wrong, fetch to: "' + URL + '" Failed.')
@@ -51,6 +52,7 @@ export default function App() {
         <BrowserRouter>
             <Routes>
                 <Route path='/' element={<Bootstrapper />}>
+                    <Route path='/' element={<Home />} />
                     <Route path='login' element={<Auth />} />
                     <Route path='register' element={<Auth />} />
                     <Route path="/me" element={<Chat />}>
@@ -69,6 +71,8 @@ export default function App() {
 
     )
 }
+
+
 
 function Bootstrapper() { // Ensures the client has accurate data from the server, otherwise the application might compare certain values wrong.
     const navigate = useNavigate()
@@ -141,8 +145,8 @@ export class Modal {
 
 export class ModalAction {
     constructor(label, callback, style) {
-        Object.assign(this, { label, callback, style});
-       
+        Object.assign(this, { label, callback, style });
+
     }
 }
 
@@ -172,10 +176,10 @@ function ModalWindow({ modal }) {
 function ModalActionButton({ action }) {
     let modalService = useContext(ModalService)
     if (action.callback == 'dismiss') {
-            action.callback = modalService.dismissModal
+        action.callback = modalService.dismissModal
     }
     return (
-        <div className={`action-button ${action.style}`} onClick={() => {action.callback(modalService.dismissModal)}}>
+        <div className={`action-button ${action.style}`} onClick={() => { action.callback(modalService.dismissModal) }}>
             {action.label}
         </div>
     )

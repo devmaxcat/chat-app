@@ -1,4 +1,5 @@
-import React from 'react'
+import React, { useEffect } from 'react'
+import useUserSelection from '../../Hooks/useUserSelection'
 
 document.oncontextmenu = function (e) {
   if (!(e.shiftKey)) {
@@ -7,13 +8,46 @@ document.oncontextmenu = function (e) {
 }
 
 export default function GenericContextMenu({ buttons, title, context }) {
-  console.log(context)
+  const selection = useUserSelection()
+
+
+  let selectionText = selection.toString()
+
+  buttons = [...buttons,
+    // Copy text
+  {
+    label: '_DIVIDER',
+    hidden: selection.type != 'Range'
+  },
+  {
+    label: 'Copy',
+    keybind: 'CTRL+C',
+    callback: () => {
+      console.log('write')
+      navigator.clipboard.writeText(selectionText)
+    },
+    hidden: selection.type != 'Range'
+  }
+  ]
+
+
+
+
+
+
+
+
+  // copyTextItem.decay = true
+  // menu.items.push(copyTextItem)
+
+
+
   if (context.open == false) {
     return (<></>)
   }
-  
+
   return (
-    <div className='context-menu' style={{left: context.position.x + 3, top: context.position.y + 3}}>
+    <div className='context-menu' style={{ left: context.position.x + 3, top: context.position.y + 3 }}>
       <div className='title'>
         {title}
       </div>
@@ -23,13 +57,28 @@ export default function GenericContextMenu({ buttons, title, context }) {
 }
 
 function ContextItem({ item }) {
-  if (!item) {
+  if (!item || item.hidden == true) {
     return
   }
 
+  if (item.label == '_DIVIDER') {
+    return (
+      <hr>
+
+      </hr>
+    )
+  }
+
   return (
-    <div className='context-item' onMouseUp={(e) => e.stopPropagation()} onClick={(e) => {  item.callback() }}>
-      {item.label}
+    <div className='context-item' onMouseUp={(e) => e.stopPropagation()} onClick={(e) => { item.callback() }}>
+      <div className='context-label-container'>
+        {item.label}
+        <div className='context-keybind'>
+          {item.keybind}
+        </div>
+
+      </div>
+
     </div>
   )
 }

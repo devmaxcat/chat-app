@@ -204,7 +204,7 @@ code {
 }
 
 #chat {
-  flex-grow: 0;
+ 
   height: 100%;
   padding: 1rem;
   min-width: 0;
@@ -433,9 +433,9 @@ code {
 #channels {
   display: flex;
   flex-direction: column;
-
+  
   overflow-y: auto;
-  height: 100%;
+  
   margin-bottom: .9rem;
 }
 
@@ -577,7 +577,25 @@ h5 {
   font-weight: 500;
 }
 
+
+
 .pfp img {
+  
+  --size: 2.2rem;
+  height: var(--size);
+  width: var(--size);
+  flex-shrink: 0;
+  flex-grow: 0;
+  border-radius: 50%;
+  background-color: lightgray;
+  
+}
+
+.pfp-editor {
+  cursor: pointer;
+}
+
+.pfp-editor img {
   margin-right: .5rem;
   --size: 6.6rem;
   height: var(--size);
@@ -586,10 +604,6 @@ h5 {
   border-radius: 50%;
   background-color: lightgray;
   outline: 7px solid white;
-}
-
-.pfp-editor {
-  cursor: pointer;
 }
 
 .pfp-editor:hover img {
@@ -717,6 +731,11 @@ video {
 .filter-tabs {
   display: flex;
   column-gap: .35em;
+}
+
+.filter-tabs.more-space {
+ 
+  
 }
 
 .filter-tabs .tab {
@@ -1340,9 +1359,60 @@ textarea:focus {
 
 }
 
+.badge {
+  position: relative;
+  margin-right: .5rem !important;
+}
+
+
+.badge::after {
+  --size: 1.2rem;
+  content: attr(badge);
+  color: white;
+  display: flex;
+  align-items: center;
+  text-align: center;
+  border-radius: 50%;
+  display: block;
+  background-color: var(--color-primary);
+  position: absolute;
+  top: calc(var(--size) * -1/2);
+  right: calc(var(--size) * -1/2);
+  z-index: 10;
+  outline: 2px solid white;
+  width: var(--size);
+  height: var(--size);
+}
+
+.badge.secondary::after {
+  color: #999;
+  background-color: var(--background-accent-color);
+}
+
+.badge.alert::after {
+  background-color: rgb(236, 8, 8);
+}
+
+.badge[badge='NONE'] {
+  margin-right: 0 !important;
+}
+
+.badge[badge='NONE']::after {
+  
+  display: none;
+}
+
+.sidebar-opposites {
+  display: flex;
+  height: 100%;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
 .flex-pusher-vert {
   height: 100%;
-  display: none;
+  
+  
 }
 
 .settings {
@@ -1443,8 +1513,24 @@ textarea:focus {
   font-size: .91rem;
 }
 
+.context-menu .context-label-container {
+  display: flex;
+  justify-content: space-between;
+}
+
+.context-keybind {
+  opacity: .5;
+}
+
+.context-menu hr {
+  margin: .5rem .5rem;
+ 
+  border: none;
+  border-bottom: 1px solid #ecedf1;
+}
+
 .context-menu .title {
-  padding: .5rem .5rem;
+  padding: .5rem 1rem;
   padding-top: .1rem;
   border-bottom: 1px solid #ecedf1;
   margin-bottom: .5rem;
@@ -1556,6 +1642,11 @@ textarea:focus {
 
 .sidebar-mover {
   transition: 200ms;
+  height: 100%;
+  max-height: 100%;
+  display: flex;
+  flex-direction: column;
+  flex-grow: 0;
 }
 
 .sidebar-mover.true {

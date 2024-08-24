@@ -142,7 +142,16 @@ export default function Chat() {
                     console.log(to)
                     let data = await requester(true, '/api/friend/create', 'POST', true, { to: to, useid })
                     if (!data.error) {
-                        client.emit('FriendRequestSent', data.request)
+                      
+                        return {}
+                    } else {
+                        return data
+                    }
+                }
+                data.remove = async function (userId) {
+                    let data = await requester(true, '/api/friend/unfriend', 'POST', true, { userId })
+                    if (!data.error) {
+                       
                         return {}
                     } else {
                         return data
@@ -151,14 +160,13 @@ export default function Chat() {
                 data.respond = async function (id, status) {
                     let data = await requester(true, '/api/friend/respond', 'POST', true, { id, status })
                     if (!data.error) {
-                        client.emit('FriendRequestSent', data.request)
+                       
                         return {}
                     } else {
                         return data
                     }
                 }
                 data.isFriends = function (otherid) {
-                    console.log(otherid, user._id)
                     let result = data.find((e) => ((e.from?._id == user?._id && e.to?._id == otherid) || (e.to?._id == user._id && e.from?._id == otherid)))
                     if (result && result.status == 1) {
                         return { isfriends: true, result }
@@ -174,11 +182,11 @@ export default function Chat() {
         }
         refreshChannels()
         refreshFriends()
-        client.on('FriendRequestRecieved', refreshFriends)
-        client.on('FriendRequestSent', refreshFriends)
+        client.on('FriendRequest', refreshFriends)
+      
         return () => {
-            client.off('FriendRequestRecieved', refreshFriends)
-            client.off('FriendRequestSent', refreshFriends)
+            client.off('FriendRequest', refreshFriends)
+           
 
         }
     }, [location, client])

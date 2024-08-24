@@ -12,21 +12,36 @@ export default function UserContextMenu({ user, context }) {
   const userData = useContext(UserContext)
   const navigate = useNavigate()
 
-  const { isfriends, result } = friends.isFriends(user)
-  console.log('is firneds', isfriends)
+  const { isfriends, result } = friends.isFriends(user._id)
+  
   let unfriend = () => {
-    modalservice.addModal(new Modal('CONFIRM', `Are you sure you want to unfriend ${user?.displayName || user.username}?\n\nThey will not be notified.`, [new ModalAction('Cancel', 'dismiss', 'secondary-grey'), new ModalAction('Confirm', (dismisser) => { client.emit('FriendRequestRemove', { otherid: user.id }); dismisser() }, 'red')]));
+    modalservice.addModal(new Modal('CONFIRM', `Are you sure you want to unfriend ${user?.displayName || user.username}?\n\nThey will not be notified.`, [new ModalAction('Cancel', 'dismiss', 'secondary-grey'), new ModalAction('Confirm', (dismisser) => { friends.remove(user._id, true); dismisser() }, 'red')]));
   }
   let addfriend = () => {
     friends.send(user._id, true)
   }
+  let friendLabel = function (status) {
+    switch (status) {
+      case 0:  return 'Request Pending';
+      case 1:  return 'Remove Friend';
+      default: return 'Add Friend';
+    }
+  }(result?.status)
 
   const buttons = [
     {
       label: 'Profile'
     },
     {
+      label: 'Edit Profile',
+      hidden: user._id != userData._id,
+      callback: () => {
+        navigate('/me/settings/profile')
+      }
+    },
+    {
       label: 'Message',
+      hidden: user._id == userData._id,
       callback: () => {
         channels.forEach((e) => {
           console.log(e.recipients.map(item => item._id).includes(userData._id))
@@ -36,14 +51,18 @@ export default function UserContextMenu({ user, context }) {
       }
     },
     {
-      label: isfriends ? 'Remove Friend' : 'Add Friend',
+      label: friendLabel,
+      hidden: user._id == userData._id,
       callback: isfriends ? unfriend : addfriend
     },
     {
-      label: 'Copy User ID'
+      label: 'Copy User ID',
+      callback: () => {
+        navigator.clipboard.writeText(user._id)
+      }
     }
   ]
   return (
-    <GenericContextMenu buttons={buttons} title={''} context={context} />
+    <GenericContextMenu buttons={buttons} title={'Title'} context={context} />
   )
 }

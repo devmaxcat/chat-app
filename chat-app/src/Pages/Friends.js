@@ -38,13 +38,20 @@ export default function Friends() {
         filteredList = []
     }
 
+    function returnEmptyIf0(a) {
+        if (a == 0) {
+            return 'NONE'
+        } else
+            return a
+    }
+
     return (
         <div>
             <h1>Friends</h1>
-            <div className='filter-tabs'>
-                <div onClick={() => setFilter('AllFriends')} className={`tab ${filter == 'AllFriends' ? 'selected' : ''}`}>All ({AllFriends.length})</div>
-                <div onClick={() => setFilter('Requests')} className={`tab ${filter == 'Requests' ? 'selected' : ''}`}>Requests ({Requests.length})</div>
-                <div onClick={() => setFilter('Pending')} className={`tab ${filter == 'Pending' ? 'selected' : ''}`}>Pending ({Pending.length})</div>
+            <div className='filter-tabs more-space'>
+                <div onClick={() => setFilter('AllFriends')} className={`tab ${filter == 'AllFriends' ? 'selected' : ''}`}>All</div>
+                <div onClick={() => setFilter('Requests')} badge={returnEmptyIf0(Requests.length) } className={`tab badge ${filter == 'Requests' ? 'selected' : ''}`}>Requests</div>
+                <div onClick={() => setFilter('Pending')} badge={ returnEmptyIf0(Pending.length) } className={`tab badge secondary ${filter == 'Pending' ? 'selected' : ''}`}>Pending</div>
 
                 <div onClick={() => setFilter('AddFriend')} className={`tab green ${filter == 'AddFriend' ? 'selected' : ''}`}><i class="fa-solid fa-plus"></i> Add Friend</div>
             </div>
