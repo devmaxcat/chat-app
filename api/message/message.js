@@ -17,7 +17,11 @@ exports.history = async (req, res, next) => {
     return
   }
 
-  let channel = await Channel.findById(req.query.channelid)
+  let channel = await Channel.findById(req.query?.channelid)
+
+  if (!channel) {
+    return
+  }
 
   if (!channel.recipients.includes(sessionData._id)) {
     res.status(401).json({

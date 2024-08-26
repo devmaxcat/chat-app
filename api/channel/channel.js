@@ -19,10 +19,16 @@ exports.get = async (req, res, next) => { // Gets a logged in user's channels th
 }
 
 exports.create = async (req, res, next) => {
+  let user = req.session?.user
+  const {recipients} = req.body
 
- 
+  await Channel.create({
+    owner_id: user._id,
+    recipients: recipients,
+    name: recipients.join(', '),
+    type: 0
+  })
 
-  const { type, recipients, name } = req.body
 }
 
 

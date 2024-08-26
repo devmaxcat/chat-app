@@ -91,6 +91,17 @@ module.exports.io = io
 
 io.engine.use(sessionware);
 
+io.use((socket, next) => {
+  let sessionData = socket.request.session.user;
+  let user = socket.request.session.user;
+  if (!(sessionData && user)) {
+    console.log('unauthorized connection attempted')
+    next(new Error("Unauthorized"));
+    return
+  }
+  next()
+})
+
 const gateway = require('./gateway')
 io.on('connection', (socket) => {
   gateway(socket, io)

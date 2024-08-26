@@ -85,13 +85,20 @@ exports.create = async (req, res, next) => {
     else if (request.status == 0 && !request.from.equals(user._id)) {
       // req already exists from other user, assume a mutual want to be friends, set to accepted
       await FriendRequest.updateOne(request, { status: 1 })
-      if (!await Channel.findOne({ recipients: { $in: [request.from, request.to] }, type: 0 })) {
-        await Channel.create({
+      let existingDM = await Channel.findOne({
+        recipients: { $all: [request.to, request.from], $size: 2 },
+        type: 0
+      });
+      console.log(request.to, request.from, existingDM)
+      if (!existingDM) {
+        let nc = await Channel.create({
           owner_id: request.from,
           recipients: [request.from, request.to],
           name: `DM Between ${request.from} & ${request.to}`,
           type: 0
         })
+
+        io.to(request.from.toString()).to(request.to.toString()).emit('ChannelUpdate', nc)
       }
 
       message = "Friend added!"
@@ -118,7 +125,7 @@ exports.create = async (req, res, next) => {
 }
 
 const status = {
-  PENDING: 0, // set on creation or re-creation by sender (cannot be set through a responce)
+  PENDING: 0, // set on creation or re-creation  (cannot be set through a responce)
   ACCEPTED: 1, // only set by reciever
   DENIED: 2, // only set by reciever
   CANCELLED: 3, // only set by sender
@@ -171,7 +178,7 @@ exports.respond = async (req, res, next) => {
   if (request.from.equals(user._id)) {
     if (newStatus != status.CANCELLED) {
       res.status(401).json({
-        error: "Unvalid Action",
+        error: "Invalid Action",
         message: "As the sender, you cannot perform this action"
       })
       return
@@ -180,13 +187,18 @@ exports.respond = async (req, res, next) => {
     console.log(newStatus, status.ACCEPTED, status.DENIED)
     if (!(newStatus == status.DENIED || newStatus == status.ACCEPTED)) {
       res.status(401).json({
-        error: "Unvalid Action",
+        error: "Invalid Action",
         message: "As the recipient, you cannot perform this action"
       })
       return
     }
     if (newStatus == status.ACCEPTED) {
-      if (!await Channel.findOne({ recipients: { $in: [request.from, request.to] }, type: 0 })) {
+      let existingDM = await Channel.findOne({
+        recipients: { $all: [request.to, request.from], $size: 2 },
+        type: 0
+      });
+      console.log(request.to, request.from, existingDM)
+      if (!existingDM) {
         await Channel.create({
           owner_id: request.from,
           recipients: [request.from, request.to],

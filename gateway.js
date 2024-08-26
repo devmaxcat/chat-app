@@ -16,9 +16,6 @@ module.exports = async (socket, io) => {
   let sessionData = socket.request.session.user;
   let user = socket.request.session.user;
 
-  if (!(sessionData && user)) {
-    return
-  }
 
   let channels = await Channel.find({ recipients: new ObjectId(user._id) })
   channels.forEach((channel) => {
