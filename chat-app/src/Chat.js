@@ -4,7 +4,7 @@ import { RequestContext, UserContext } from "./App";
 import Sidebar from './Sidebar/Sidebar';
 import Pane from './Pane';
 import ProfileDrop from './ProfileDrop'
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import Call from './Call';
 import { io } from "socket.io-client";
 export const ClientContext = createContext(null)
@@ -55,6 +55,7 @@ export class AlertAction {
 
 export default function Chat() {
     const requester = useContext(RequestContext)
+    const navigate = useNavigate()
     const user = useContext(UserContext)
     const location = useLocation()
     const [channels, setChannels] = useState([])
@@ -106,7 +107,13 @@ export default function Chat() {
                 disconnectedAlert = alert(new Alert('error', 'Lost connection to the server. Things may not work as expected', 'DISCONNECTED', 0, [new AlertAction('primary', () => window.location.reload(), 'Reload')], 3, 100, 'fa-solid fa-plug-circle-exclamation'))
 
             }
-
+            function onServerException(error) {
+                console.log(error)
+                if (error.redirect) {
+                    navigate(error.redirect)
+                }
+            }
+            socket.on('ExceptionOccurred', onServerException);
             socket.on('connect', onConnect);
             socket.on('disconnect', onDisconnect);
 
@@ -125,13 +132,14 @@ export default function Chat() {
         async function refreshChannels() {
             setActivityStatus(1)
             let data = await requester(true, '/api/channel/get', 'GET', true)
-
+          
             if (!data.error) {
                 data.refresh = refreshChannels
                 setChannels(data)
             } else {
                 setChannels(null)
             }
+            return data
         }
         async function refreshFriends() {
             let data = await requester(true, '/api/friend/get', 'GET', true)
@@ -147,6 +155,11 @@ export default function Chat() {
                     } else {
                         return data
                     }
+                }
+                data.asFriendsList = function() {
+                    let acceptedFriendRequests = data.filter((e) => e.status == 1)
+                    let actualFriends = acceptedFriendRequests.flatMap(({ to, from }) => [to, from]).filter(u => u._id !== user._id);
+                    return actualFriends
                 }
                 data.remove = async function (userId) {
                     let data = await requester(true, '/api/friend/unfriend', 'POST', true, { userId })
@@ -178,15 +191,15 @@ export default function Chat() {
             } else {
                 //alerts.alert(new Alert('error', data.error, data.message))
             }
-
+            return data
         }
         refreshChannels()
         refreshFriends()
         client.on('FriendRequest', refreshFriends)
-      
+        client.on('ChannelUpdate', refreshChannels)
         return () => {
             client.off('FriendRequest', refreshFriends)
-           
+            client.off('ChannelUpdate', refreshChannels)
 
         }
     }, [location, client])

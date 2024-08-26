@@ -22,10 +22,9 @@ export default function User() {
                 <i class="fa-solid fa-chevron-down"></i>
                 <div className={`profile-dropdown-menu`}>
                     <img src={user.icon}></img>
+                    {user ? user.displayName : ''}<br />
                     {user ? user.username : ''}
-                    <div className="bio">
-                        bio text here
-                    </div>
+                  
                     <Link to={'/me/settings/profile'} className="action-button">
                         Edit Profile
                     </Link>

@@ -26,6 +26,6 @@ export default function ActivityIcon({ user }) {
    
 
   return (
-    <div class={`activity-status ${className}`}></div>
+    <div key={user._id + 'actstatus'} class={`activity-status ${className}`}></div>
   )
 }

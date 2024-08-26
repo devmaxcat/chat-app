@@ -14,7 +14,7 @@ export default function GenericContextMenu({ buttons, title, context }) {
   let selectionText = selection.toString()
 
   buttons = [...buttons,
-    // Copy text
+  // Copy text
   {
     label: '_DIVIDER',
     hidden: selection.type != 'Range'
@@ -31,6 +31,15 @@ export default function GenericContextMenu({ buttons, title, context }) {
   ]
 
 
+  useEffect(() => {
+    if (context.open) {
+      context.target?.classList.add('f-force')
+    } else {
+      context.target?.classList.remove('f-force')
+    }
+    return () => {context.target?.classList.remove('f-force')}
+    
+  }, [context])
 
 
 

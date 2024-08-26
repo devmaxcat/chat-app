@@ -2,6 +2,7 @@ import { React, useState } from 'react'
 import { Link, useLocation } from 'react-router-dom';
 import Channels from './Channels';
 import Searcher from '../Shared/Searcher';
+import CreateChannel from './CreateChannel';
 
 
 export default function Sidebar() {
@@ -19,7 +20,7 @@ export default function Sidebar() {
                 </div>
             </Searcher>
             <div className={`sidebar-mover ${searching}`}>
-                <div className='channel-selector'><i class="fa-solid fa-message"></i>+ Create New</div>
+                <CreateChannel></CreateChannel>
                 <h3 className='channels-header'>Conversations </h3>
                 <div className='sidebar-opposites'>
                     <div>

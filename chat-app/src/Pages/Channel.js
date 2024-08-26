@@ -179,13 +179,13 @@ function Message({ data, previous, index, history }) {
     let time = moment(data.createdAt)
     let now = moment()
     let displaytime;
-
-    if (time.format('d') == now.format('d')) {
+    console.log(time.isSame(now, "day"))
+    if (time.isSame(moment(), 'day')) {
 
         displaytime = time.fromNow()
     }
-    else if (Number(time.format('D')) == now.format('D') - 1) displaytime = 'Yesterday ' + time.format(' LT')
-    else if (now.format('ww') == now.format('ww')) displaytime = time.format('dddd LT')
+    else if (time.isSame(moment().subtract(1, 'days'), 'day')) displaytime = 'Yesterday at ' + time.format(' LT')
+    //else if (time.isSame(moment(), 'week')) displaytime = time.format('dddd LT')
     else displaytime = time.format('L LT ')
 
     MessageIconURL = data.author?.icon || '/default-user-pfp.webp'
@@ -241,7 +241,7 @@ function ChannelMember({ data }) {
         open,
     } = useContextMenu()
     return (
-        <div className='profile-small' onContextMenu={handleClick()}>
+        <div className='profile-small w-interact' onContextMenu={handleClick()}>
              <UserContextMenu user={data} context={context} />
             <div className='pfp'>
                 <img src={data?.icon || '/default-user-pfp.webp'}></img>

@@ -18,10 +18,11 @@ export default function useContextMenu() {
         }))
     }, [])
 
-    const open = (x, y) => {
+    const open = (x, y, e) => {
         setContext({
             ...context,
             open: true,
+            target: e.currentTarget,
             position: {
                 x, y
             }
@@ -30,7 +31,8 @@ export default function useContextMenu() {
 
     const handleClick = () => {
         return (e) => {
-            open(e.clientX, e.clientY)
+            
+            open(e.clientX, e.clientY, e)
         }
     }
 
