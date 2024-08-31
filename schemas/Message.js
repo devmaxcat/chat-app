@@ -8,13 +8,15 @@ const MessageSchema = new Mongoose.Schema({
     },
     channel_id: {
         type: ObjectId,
-        required: false,
-        default: new ObjectId('669819f89601761de9c47648'),
+        required: true,
         ref: 'channel'
     }, author: {
         type: ObjectId,
-        required: false,
+        required: true,
         ref: 'user'
+    },
+    media: {
+        type: Array
     }
 }, { timestamps: true })
 

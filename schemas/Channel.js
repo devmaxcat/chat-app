@@ -12,11 +12,14 @@ const ChannelSchema = new Mongoose.Schema({
     },
     name: { // only visible for guild channels or group dms
         type: String,
-        default: 'Chat'
+        default: 'Chat',
+        minlength: 1,
     },
     recipients: {
         type: Array,
-        default: []
+        default: [{ 
+            type: ObjectId, 
+            ref: 'user' }]
     },
     lastActiveTime: {
         type: Date,

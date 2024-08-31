@@ -111,6 +111,11 @@ io.on('connection', (socket) => {
 
 
 
+
+
+app.use("/proxy",async (req, res) => {
+  
+})
 app.use("/api/auth", require("./api/auth/route"))
 app.use("/api/profile", require("./api/profile/route"))
 app.use("/api/user", require("./api/user/route"))
