@@ -38,13 +38,89 @@ export default function Settings() {
 }
 // Tabs
 export function TAccount() {
+    const userData = useContext(UserContext)
+    const alerts = useContext(AlertContext)
+
+    const [responseError, setResponseError] = useState('')
+
+    const {
+        register,
+        handleSubmit,
+        watch,
+        reset,
+        getValues,
+        formState: { errors },
+    } = useForm({
+        defaultValues: {
+            username: userData.username,
+           
+        }
+
+    })
+
+    const [formValues, setFormValues] = useState(getValues())
+
+    const onSubmit = async (event) => {
+        const profileEditForm = document.getElementById('profileEditForm')
+        setResponseError('')
+
+        fetch('http://localhost:443/api/profile/update', {
+            method: 'POST',
+            credentials: 'include',
+            headers: {
+
+            },
+            body: new FormData(profileEditForm),
+        })
+            .then((response) => response.json())
+            .then(async (data) => {
+               
+                if (!data.error) {
+                    userData.refreshUser()
+                } else {
+                    setResponseError(data.message)
+                }
+            })
+    }
+    console.log(userData.joindate)
+    useEffect(() => { // Watches input updates
+        const subscription = watch((value, { name, type }) => {
+            setFormValues(value)
+          
+        });
+        return () => { subscription.unsubscribe();  };
+
+    }, [watch])
+
 
     return (
-        <div className='form'>
-            <h3>Account</h3>
-            <div>Account Info</div>
-        </div>
+        <>
+            <form className='form' id='profileEditForm' >
+                <h3>Account</h3>
+            
+                <label>Username</label>
+                <div className='input-wrapper'>
+                    <input name='username' id='username'  {...register("username", { required: true })}></input>
+                </div>
+                <label>Email</label>
+                <div className='input-wrapper'>
+                    <input name='email' id='email'  {...register("email", { required: true })}></input>
+                </div>
+               
+              
+                <label>Password</label>
+               
+                    <a>Change Password</a>
+              
+                    <label>Connected Accounts</label>
+
+                
+               
+            </form>
+        </>
     )
+
+
 }
 
 export function TProfile() {
@@ -139,13 +215,13 @@ export function TProfile() {
                         <div className='bio'>
                             {formValues.bio}
                         </div>
-                    </>) : '' }
+                    </>) : ''}
 
 
                     <div>
                         <div>
                             <h5>Date Joined</h5>
-                            {moment(userData.joindate).format('LL')}
+                            {moment(userData.createdAt).format('LL')}
                         </div>
                     </div>
                 </div>

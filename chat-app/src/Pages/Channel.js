@@ -1,14 +1,87 @@
-import React, { useContext, useEffect, useRef, useState } from 'react'
+import React, { useContext, useEffect, useReducer, useRef, useState } from 'react'
 import { useLocation, useNavigate, useParams } from 'react-router'
-import { Alert, AlertContext, ChannelsContext, ClientContext } from '../Chat'
-import { UserContext } from '../App'
+import { Alert, AlertContext, ChannelsContext, ClientContext, FriendsContext } from '../Chat'
+import { RequestContext, UserContext } from '../App'
 import MessageSkeletonBuffer from '../MessageSkeletonBuffer'
 import ActivityIcon from '../Profile/ActivityIcon'
 import UserContextMenu from '../Shared/ContextMenu/UserContextMenu'
 import useContextMenu from '../Shared/ContextMenu/useContextMenu'
+import GenericSelectionMenu from '../Shared/SelectionMenu/GenericSelectionMenu'
+import useSelectionMenu from '../Shared/SelectionMenu/useSelectionMenu'
+
 
 
 let reachedEnd = false;
+
+
+function ChannelName({ channel }) {
+    const [editing, setEditing] = useState(false);
+    const requester = useContext(RequestContext)
+    const channels = useContext(ChannelsContext)
+
+    async function updateChannelName(name) {
+        let data = await requester(true, '/api/channel/update', 'POST', true, {
+            channelid: channel._id,
+            name: name
+        })
+        if (!data.error) {
+            setEditing(false)
+            channels.refresh()
+        }
+
+    }
+
+    useEffect(() => { setEditing(false) }, [channel])
+
+
+    return (
+        <div className='channel-top-name' >
+            <img src={channel.icon}></img>
+            <span key={channel._id}>
+                <div className='input-wrapper disabled-plaintext' onClick={() => { if (channel.type != 0) setEditing(true) }}>
+
+                    <input min-width='3rem' className={editing} defaultValue={channel.name} disabled={!editing} onBlur={(e) => { updateChannelName(e.currentTarget.value) }} ></input>
+
+
+                    {/* <div>{channelData.recipients.length} Members</div> */}
+                </div>
+            </span>
+        </div>
+    )
+}
+
+function ChannelAdd({ channel }) {
+    const friends = useContext(FriendsContext).asFriendsList()
+    const channels = useContext(ChannelsContext)
+    const requester = useContext(RequestContext)
+    const navigate = useNavigate()
+    const { context, handleClick } = useSelectionMenu()
+
+    let recipients = channel.recipients.map(e => e._id)
+
+    let sortFriends = friends.filter((e) => !recipients.includes(e._id))
+
+    console.log(friends)
+
+
+
+    async function onSelectionComplete(values) {
+        let data = await requester(true, '/api/channel/add', 'POST', true, {
+            channelid: channel._id,
+            recipients: values.map((e) => e._id)
+        })
+        if (data.channel) {
+            await channels.refresh()
+            navigate('/me/channel/' + data.channel._id)
+        }
+    }
+    return (
+        <div>
+            <i class="fa-solid fa-user-plus" onClick={handleClick()}></i>
+            {context.open ? (<GenericSelectionMenu title={'Add Friends'} list={sortFriends} context={context} onSelectionComplete={onSelectionComplete}></GenericSelectionMenu>) : ('')}
+        </div>
+    )
+}
 
 
 export default function Channel() {
@@ -42,7 +115,7 @@ export default function Channel() {
     //     }
     // }, 'channellistener_deleted')
 
-    
+
     useEffect(() => { historyReference.current = history }, [history])
     useEffect(() => {
 
@@ -54,7 +127,7 @@ export default function Channel() {
                 setHistory([data, ...historyReference.current])
             }
         })
-        
+
         fetch('http://localhost:443/api/message/history?' + new URLSearchParams({ channelid: channelid }), {
             method: 'GET',
             credentials: 'include'
@@ -64,7 +137,7 @@ export default function Channel() {
                 if (!data.error) {
                     setHistory(data)
                 } else {
-                    alerts.alert(new Alert('error', data.error, data.message))
+                    alerts.alert(new Alert('error', data.message, data.error, 0, [], 0, 0, "fa-solid fa-ban"))
                     if (data.error == 'Unauthorized') {
                         navigate('/login')
                     }
@@ -78,24 +151,23 @@ export default function Channel() {
     if (channelData?.type == 0) {
         let DMUser = channelData.recipients.find((e) => e._id != userData._id)
         channelName = DMUser?.displayName || DMUser?.username
+        channelData.name = channelName
         channelIconURL = DMUser?.icon || '/default-user-pfp.webp'
-    } else {
+        channelData.icon = channelIconURL
+    } else if (channelData) {
         channelName = channelData?.name
         channelIconURL = channelData?.icon || '/default-group-pfp.webp'
+        channelData.icon = channelIconURL
+    } else {
+        return
     }
     return (
 
         <>
             <div className='pane-topbar'>
-                <div className='channel-top-name'>
-                    <img src={channelIconURL}></img>
-                    <div>
-                        <div min-width='3rem' className='empty-skeleton-text'>{channelName}</div>
-                        {/* <div>{channelData.recipients.length} Members</div> */}
-                    </div>
+                <ChannelName channel={channelData}></ChannelName>
 
-                </div>
-
+                <ChannelAdd key={channelData._id} channel={channelData}></ChannelAdd>
             </div>
 
             <div className='channel'>
@@ -122,40 +194,35 @@ export default function Channel() {
                                 })
                         }
                     }}>
-                        { history.length == 0 ? (<div>Send a message!</div>) : '' }
+
+                        {/* {history.length == 0 ? (<div className='no-message-history'><img src={'/static-content/no-message-history.webp'}></img>Send a message!</div>) : ''} */}
                         {history.map((v, i) => (<Message key={v._id} data={v} previous={history[i + 1]} index={i} history={history} />))}
+                        {(<div className='no-message-history'>
+                            <div className='title'>
+                                <img src={channelIconURL}></img>
+                                <div>{channelName}</div>
+                            </div>
+
+                            Send a message!
+                        </div>)}
                         {/* {!reachedEnd ? <MessageSkeletonBuffer key={Math.random()}></MessageSkeletonBuffer> : ''} */}
 
 
                     </div>
-                    <div className='input-wrapper message-bar'>
-                        <input placeholder='Type a message' onKeyPress={(event) => {
-                            if ((event.key) === "Enter") {
-                                event.preventDefault();
-
-                                fetch('http://localhost:443/api/message/create', {
-                                    headers: {
-                                        'content-type': 'application/json'
-                                    },
-                                    method: 'POST',
-                                    credentials: 'include',
-                                    body: JSON.stringify({ text_content: event.target.value, channel_id: channelid })
-                                })
-                                    .then((res) => res.json())
-                                    .then((data) => {
-                                        event.target.value = ''
-                                    })
-
-                            }
-                        }} ></input>
-                    </div>
+                    <MessageBar key={channelid} channelid={channelid}></MessageBar>
                 </div>
                 <div className='channel-info'>
                     <div className='input-wrapper'>
                         <input placeholder='Search...'></input>
                     </div>
-                    <h4>Members</h4>
-                    {channelData?.recipients.map((v, i) => (<ChannelMember key={i} data={v}></ChannelMember>))}
+                    {channelData?.type != 0 ?
+                        (<>
+                            <h4>Members</h4>
+                            {channelData?.recipients.map((v, i) => (<ChannelMember key={i} data={v}></ChannelMember>))}
+                        </>)
+                        :
+                        (<></>)}
+
 
 
                 </div>
@@ -169,9 +236,22 @@ var moment = require('moment');
 
 let lastRenderedMessage = null
 function Message({ data, previous, index, history }) {
-
+    const requester = useContext(RequestContext)
+    const [embeds, setEmbeds] = useState([])
     let MessageIconURL;
 
+    useEffect(() => {
+        (requester.extractUrls(data.text_content) || []).forEach(async URLstr => {
+            console.log(URLstr)
+            if (await requester.isImgUrl(URLstr)) {
+                console.log(URLstr, 'is image')
+                setEmbeds([...embeds, { type: 'image', url: URLstr }])
+            } else {
+                console.log(URLstr, 'not image')
+            }
+        });
+    }, [])
+    console.log('EMBEDS', embeds)
 
 
 
@@ -179,7 +259,16 @@ function Message({ data, previous, index, history }) {
     let time = moment(data.createdAt)
     let now = moment()
     let displaytime;
-    console.log(time.isSame(now, "day"))
+    let componentizedText = data.text_content.split(' ').map((e) => {
+        if (requester.testURL(e)) {
+
+            return (<a href={e}> {e} </a>)
+
+        } else {
+            return " " + e + " "
+        }
+
+    })
     if (time.isSame(moment(), 'day')) {
 
         displaytime = time.fromNow()
@@ -199,8 +288,10 @@ function Message({ data, previous, index, history }) {
                 <div className='gutter'></div>
                 <div>
                     <div>
-                        {data.text_content}
+                        {componentizedText}
+
                     </div>
+                    {embeds.map((e) => { console.log(e); return (<img src={e.url}></img>) })}
                 </div>
             </div>
         )
@@ -209,7 +300,7 @@ function Message({ data, previous, index, history }) {
 
         return (
             <div className='message'>
-                <div>
+                <div className='pfp'>
                     <img src={MessageIconURL}></img>
                 </div>
                 <div>
@@ -222,8 +313,10 @@ function Message({ data, previous, index, history }) {
                         </div>
                     </div>
                     <div>
-                        {data.text_content}
+                        {componentizedText}
+
                     </div>
+                    {embeds.map((e) => { console.log(e); return (<img src={e.url}></img>) })}
                 </div>
             </div>
         )
@@ -242,7 +335,7 @@ function ChannelMember({ data }) {
     } = useContextMenu()
     return (
         <div className='profile-small w-interact' onContextMenu={handleClick()}>
-             <UserContextMenu user={data} context={context} />
+            <UserContextMenu user={data} context={context} />
             <div className='pfp'>
                 <img src={data?.icon || '/default-user-pfp.webp'}></img>
                 <ActivityIcon user={data} />
@@ -251,5 +344,56 @@ function ChannelMember({ data }) {
             {data.displayName || data.username}
         </div>
 
+    )
+}
+
+function messageMediaReducer(values, action) {
+    switch (action.type) {
+        case 'add': {
+            return [...values, action.data]
+           
+        }
+        case 'remove': {
+            return values.filter(e => e !== action.data)
+        }
+        default: {
+            throw Error('Unknown Action.')
+        }
+       
+    }
+}
+
+function MessageBar({channelid}) {
+    const [media, mediaDispatcher] = useReducer(messageMediaReducer, [])
+    console.log('meida', media)
+    return (
+        <div  className='input-wrapper message-bar'>
+            <div className='attached-media'> {media.map(file => (<div className='message-media-preview'><i className='fa-solid fa-x' onClick={() => mediaDispatcher({type: 'remove', data: file})}></i><img src={URL.createObjectURL(file)}></img></div>))} </div>
+            <textarea placeholder='Type a message' onPasteCapture={(e) => {
+                mediaDispatcher({ type: 'add', data: e.clipboardData.files[0]})
+            }} onKeyPress={(event) => {
+                if ((event.key) === "Enter") {
+                    let formdata = new FormData()
+                    formdata.append('text_content', event.target.value)
+                    formdata.append('channel_id', channelid)
+                    for (let file of media) {
+                        formdata.append(file.name, file);
+                    }
+                    
+                    event.preventDefault();
+
+                    fetch('http://localhost:443/api/message/create', {
+                        method: 'POST',
+                        credentials: 'include',
+                        body: formdata
+                    })
+                        .then((res) => res.json())
+                        .then((data) => {
+                            event.target.value = ''
+                        })
+
+                }
+            }} ></textarea>
+        </div>
     )
 }

@@ -1,31 +1,29 @@
 import { useEffect, useState } from "react"
 
-export default function useContextMenu() {
+export default function useSelectionMenu() {
     const [context, setContext] = useState({
         open: false,
         position: {
             x: 0,
             y: 0
-        }
+        },
     })
 
-    useEffect(() => {
-        document.addEventListener("mouseup", (() => {
-            setContext({
-                ...context,
-                open: false
-            })
-        }))
-    }, [])
 
     const open = (x, y, e) => {
         setContext({
             ...context,
             open: true,
-            target: e.currentTarget,
             position: {
-               x: (x + 5), y: (y + 2)
+                x, y
             }
+        })
+    }
+
+    const close = () => {
+        setContext({
+            ...context,
+            open: false,
         })
     }
 
@@ -40,6 +38,7 @@ export default function useContextMenu() {
         handleClick,
         context,
         open,
+        close,
         
     }
 }

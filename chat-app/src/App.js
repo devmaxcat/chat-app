@@ -9,9 +9,7 @@ import Settings from './Pages/Settings';
 import Auth from './Auth/Auth';
 import Home from './Static/Pages/Home';
 
-export const UserContext = React.createContext(null)
-export const ModalService = React.createContext({})
-export const RequestContext = React.createContext(async (isApi, resourceUri, method, expectJson, body) => {
+const requester = async function (isApi, resourceUri, method, expectJson, body) {
 
     let URL = isApi ? 'http://localhost:443' + resourceUri : resourceUri
     let response;
@@ -41,7 +39,51 @@ export const RequestContext = React.createContext(async (isApi, resourceUri, met
         console.error('Something went wrong, fetch to: "' + URL + '" Failed.')
     }
     return response
-})
+}
+requester.isImgUrl = async function (url) {
+    if (url?.includes('data:image/')) {
+        return true
+    }
+    let external = fetch(url, { method: 'HEAD' }).then(res => {
+        return res.headers.get('Content-Type').startsWith('image')
+    }, error => {})
+
+    return external
+}
+requester.extractUrls = function (str) {
+    return str.split(' ').map(substr => {
+        let url;
+        
+        try {
+          url = new URL(substr);
+          
+          return substr
+        } catch (_) {
+          
+          return;  
+         
+        }
+    });
+}
+requester.testURL = function(str) {
+        
+        let url;
+        
+        try {
+          url = new URL(str);
+          console.log(str, true)
+          return true
+        } catch (_) {
+            console.log(str, false)
+          return false;  
+         
+        }
+      
+}
+
+export const UserContext = React.createContext(null)
+export const ModalService = React.createContext({})
+export const RequestContext = React.createContext(requester)
 
 export default function App() {
 

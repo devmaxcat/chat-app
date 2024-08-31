@@ -7,6 +7,7 @@ import ContextMenuButton, { MenuTemplates } from '../ContextMenu'
 import Friends from '../Pages/Friends'
 import useContextMenu from '../Shared/ContextMenu/useContextMenu'
 import UserContextMenu from '../Shared/ContextMenu/UserContextMenu'
+import GroupDMContextMenu from '../Shared/ContextMenu/GroupDMContextMenu'
 
 
 export default function Channels() {
@@ -89,7 +90,12 @@ function ChannelItem({ data }) {
     return (
 
         <Link className={`channel-selector ${extraclass}`} to={'/me/channel/' + data._id} onContextMenu={handleClick()}>
-            <UserContextMenu user={DMUser} context={context} />
+            {data?.type == 0 ?
+            ( <UserContextMenu user={DMUser} context={context} />) 
+            : 
+            ( <GroupDMContextMenu channel={data} context={context} />)    
+        }
+           
             <div class="profile-small">
                 <div class="pfp">
                     <img src={channelIconURL}></img>

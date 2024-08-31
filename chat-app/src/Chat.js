@@ -145,7 +145,7 @@ export default function Chat() {
             let data = await requester(true, '/api/friend/get', 'GET', true)
 
             if (!data.error) {
-                data.refresh = refreshFriends
+                data.refresh = () => {refreshFriends(); refreshChannels()}
                 data.send = async function (to, useid) {
                     console.log(to)
                     let data = await requester(true, '/api/friend/create', 'POST', true, { to: to, useid })
