@@ -6,7 +6,7 @@ const { io } = require('../../server')
 const DatauriParser = require('datauri/parser');
 const parser = new DatauriParser();
 console.log('io real2', io)
-const cloudinary = require('cloudinary')
+const cloudinary = require('cloudinary').v2
 
 exports.history = async (req, res, next) => {
   let sessionData = req.session?.user
@@ -64,9 +64,16 @@ exports.create = async (req, res, next) => {
 
     for (const file of req.files){
       let filename = file.fieldname
+      
       let parsed = parser.format(filename.substring(filename.lastIndexOf('.')+1, filename.length) || filename, file.buffer).content //=> "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAA...", {
-      const result = await cloudinary.uploader.upload(parsed);
-      console.log();
+      const result = await cloudinary.uploader.upload(parsed, {
+        resource_type: 'auto',
+        use_filename: true,
+        folder: 'uploads',
+        unique_filename: false,
+        context: `original_name=${filename}`
+      });
+      console.log(result);
       media.push(result)
       
     }
