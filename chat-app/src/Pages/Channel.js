@@ -500,7 +500,7 @@ function MessageBar({ channelid, pushTempHistory }) {
                    
                     formdata.append('text_content', event.target.value)
                     formdata.append('channel_id', channelid)
-
+ event.target.value = ''
                     pushTempHistory({ author: userData, channel_id: formdata.get('channel_id'), text_content: formdata.get('text_content'), media: media.map((e) => { return { secure_url: URL.createObjectURL(e), url: URL.createObjectURL(e), resource_type: 'image' } }), createdAt: new Date().toISOString() })
                     for (let file of media) {
                         formdata.append(file.name, file);
@@ -531,7 +531,7 @@ function MessageBar({ channelid, pushTempHistory }) {
                             if (xhr.status >= 200 && xhr.status < 300) {
                                 mediaDispatcher({ type: 'reset' })
 
-                                event.target.value = ''
+                               
                             } else {
 
                             }
