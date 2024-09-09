@@ -328,7 +328,7 @@ function Message({ data, previous, index, history }) {
 
                     </div>
                     <div className='attachments'>
-                    {embeds.map((e) => { return (<MessageEmbed embed={e} />) })}
+                        {embeds.map((e) => { return (<MessageEmbed embed={e} />) })}
                     </div>
 
                 </div>
@@ -356,9 +356,9 @@ function Message({ data, previous, index, history }) {
 
                     </div>
                     <div className='attachments'>
-                    {embeds.map((e) => { return (<MessageEmbed embed={e} />) })}
+                        {embeds.map((e) => { return (<MessageEmbed embed={e} />) })}
                     </div>
-                    
+
                 </div>
             </div>
         )
@@ -384,9 +384,9 @@ function MessageEmbed({ embed, progress }) {
                                     </div>
                                     <embed src={embed.url}></embed>
                                     <div className='row'>
-                                    <a target='_blank' download={embed?.context?.custom?.original_name || embed.display_name} href={embed.url} className='fa-solid fa-download' ></a>
+                                        <a target='_blank' download={embed?.context?.custom?.original_name || embed.display_name} href={embed.url} className='fa-solid fa-download' ></a>
                                         <div>{embed.bytes + ' bytes'}</div>
-                                      
+
                                     </div>
 
                                 </div>
@@ -497,14 +497,16 @@ function MessageBar({ channelid, pushTempHistory }) {
             }} onKeyPress={(event) => {
                 if ((event.key) === "Enter") {
                     let formdata = new FormData()
-                   // pushTempHistory({ author: userData, channel_id: formdata.get('channel_id'), text_content: formdata.get('text_content'), media: media.map((e) => { return { secure_url: URL.createObjectURL(e), url: URL.createObjectURL(e), resource_type: 'image' } }), createdAt: new Date().toISOString() })
+                   
                     formdata.append('text_content', event.target.value)
                     formdata.append('channel_id', channelid)
+
+                    pushTempHistory({ author: userData, channel_id: formdata.get('channel_id'), text_content: formdata.get('text_content'), media: media.map((e) => { return { secure_url: URL.createObjectURL(e), url: URL.createObjectURL(e), resource_type: 'image' } }), createdAt: new Date().toISOString() })
                     for (let file of media) {
                         formdata.append(file.name, file);
                     }
-                   
-                   
+
+
 
                     event.preventDefault();
                     const xhr = new XMLHttpRequest();
