@@ -237,21 +237,41 @@ var moment = require('moment');
 let lastRenderedMessage = null
 function Message({ data, previous, index, history }) {
     const requester = useContext(RequestContext)
-    const [embeds, setEmbeds] = useState([])
-    let MessageIconURL;
+    const [embeds, setEmbeds] = useState(function () {
+        let embedded = []
+        if (data.media) {
 
-    useEffect(() => {
-        (requester.extractUrls(data.text_content) || []).forEach(async URLstr => {
-            console.log(URLstr)
-            if (await requester.isImgUrl(URLstr)) {
-                console.log(URLstr, 'is image')
-                setEmbeds([...embeds, { type: 'image', url: URLstr }])
-            } else {
-                console.log(URLstr, 'not image')
+            for (let media of data.media) {
+                if (media.resource_type == "image") {
+                    embedded.push(media)
+
+                }
+                if (media.resource_type == "raw") {
+                    embedded.push(media)
+
+                }
             }
-        });
-    }, [])
+
+        }
+        return embedded
+    }())
+    let MessageIconURL;
+    // Linked based embedding.
+    // useEffect(() => {
+
+
+    //     (requester.extractUrls(data.text_content) || []).forEach(async URLstr => {
+    //         console.log(URLstr)
+    //         if (await requester.isImgUrl(URLstr)) {
+    //             console.log(URLstr, 'is image')
+    //             setEmbeds([...embeds, { type: 'image', url: URLstr }])
+    //         } else {
+    //             console.log(URLstr, 'not image')
+    //         }
+    //     });
+    // }, [])
     console.log('EMBEDS', embeds)
+
 
 
 
@@ -291,7 +311,8 @@ function Message({ data, previous, index, history }) {
                         {componentizedText}
 
                     </div>
-                    {embeds.map((e) => { console.log(e); return (<img src={e.url}></img>) })}
+                    {embeds.map((e) => { console.log(e); return (<MessageEmbed embed={e} />) })}
+
                 </div>
             </div>
         )
@@ -316,11 +337,46 @@ function Message({ data, previous, index, history }) {
                         {componentizedText}
 
                     </div>
-                    {embeds.map((e) => { console.log(e); return (<img src={e.url}></img>) })}
+                    {embeds.map((e) => { console.log(e); return (<MessageEmbed embed={e} />) })}
                 </div>
             </div>
         )
     }
+
+
+
+}
+
+function MessageEmbed({ embed }) {
+    return (
+        <div className='embed'>
+            {
+                function () {
+                    if (embed.resource_type == 'image') {
+                        return (
+
+                            <img src={embed.url}></img>
+                        )
+                    }
+                    else if (true) {
+                        return (
+                            <a href={embed.secure_url} className='raw'>
+                                <div>
+                                    <div>{embed?.context?.custom?.original_name || embed.display_name}</div>
+                                    <div>{embed.bytes + ' bytes'}</div>
+                                </div>
+
+
+                                <a className='fa-solid fa-download' ></a>
+                            </a>
+
+
+                        )
+                    }
+                }()
+            }
+        </div>
+    )
 
 
 
@@ -351,26 +407,50 @@ function messageMediaReducer(values, action) {
     switch (action.type) {
         case 'add': {
             return [...values, action.data]
-           
+
         }
         case 'remove': {
             return values.filter(e => e !== action.data)
         }
+        case 'reset': {
+            return []
+        }
         default: {
             throw Error('Unknown Action.')
         }
-       
+
     }
 }
 
-function MessageBar({channelid}) {
+function MessageBar({ channelid }) {
     const [media, mediaDispatcher] = useReducer(messageMediaReducer, [])
     console.log('meida', media)
     return (
-        <div  className='input-wrapper message-bar'>
-            <div className='attached-media'> {media.map(file => (<div className='message-media-preview'><i className='fa-solid fa-x' onClick={() => mediaDispatcher({type: 'remove', data: file})}></i><img src={URL.createObjectURL(file)}></img></div>))} </div>
+        <div className='input-wrapper message-bar'>
+            <div className='attached-media'> {
+                media.map(file => (
+                    <div className='message-media-preview'>
+
+                        <i className='fa-solid fa-x' onClick={() => mediaDispatcher({ type: 'remove', data: file })}>
+                            <svg width="250" height="250" viewBox="0 0 250 250">
+                                <circle class="bg"
+                                    cx="125" cy="125" r="115" fill="none" stroke="#555" stroke-width="30"
+                                ></circle>
+                                <circle class="fg"
+                                    cx="125" cy="125" r="115" fill="none" stroke="#FFFFFF" stroke-width="30"
+                                    stroke-dasharray="100"
+                                ></circle>
+                            </svg>
+                        </i>
+                        <img src={URL.createObjectURL(file)}></img>
+                    </div>
+                ))}
+            </div>
             <textarea placeholder='Type a message' onPasteCapture={(e) => {
-                mediaDispatcher({ type: 'add', data: e.clipboardData.files[0]})
+                if (e.clipboardData.files[0]) {
+                    mediaDispatcher({ type: 'add', data: e.clipboardData.files[0] })
+                }
+
             }} onKeyPress={(event) => {
                 if ((event.key) === "Enter") {
                     let formdata = new FormData()
@@ -379,18 +459,37 @@ function MessageBar({channelid}) {
                     for (let file of media) {
                         formdata.append(file.name, file);
                     }
-                    
-                    event.preventDefault();
 
-                    fetch('http://localhost:443/api/message/create', {
-                        method: 'POST',
-                        credentials: 'include',
-                        body: formdata
+                    event.preventDefault();
+                    const xhr = new XMLHttpRequest();
+                    xhr.upload.addEventListener('progress', function (event) {
+                        if (event.lengthComputable) {
+                            const percentComplete = (event.loaded / event.total) * 100;
+                            console.log(Math.round(percentComplete))
+                        }
                     })
-                        .then((res) => res.json())
-                        .then((data) => {
-                            event.target.value = ''
-                        })
+                    xhr.upload.addEventListener('load', function () {
+                        console.log('Upload complete!');
+
+                    });
+
+                    xhr.upload.addEventListener('error', function () {
+                        console.log('Upload failed!');
+                    });
+
+                    xhr.onreadystatechange = function () {
+                        if (xhr.readyState === XMLHttpRequest.DONE) {
+                            if (xhr.status >= 200 && xhr.status < 300) {
+                                mediaDispatcher({ type: 'reset' })
+                                event.target.value = ''
+                            } else {
+
+                            }
+                        }
+                    };
+                    xhr.open('POST', 'http://localhost:443/api/message/create', true);
+                    xhr.withCredentials = true
+                    xhr.send(formdata)
 
                 }
             }} ></textarea>
