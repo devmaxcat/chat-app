@@ -13,7 +13,7 @@ const requester = async function (isApi, resourceUri, method, expectJson, body) 
 
     let URL = isApi ? 'http://localhost:443' + resourceUri : resourceUri
     let response;
-    console.log(URL)
+   
     try {
         let res = await fetch(URL, {
             method,
@@ -71,10 +71,10 @@ requester.testURL = function(str) {
         
         try {
           url = new URL(str);
-          console.log(str, true)
+          
           return true
         } catch (_) {
-            console.log(str, false)
+            
           return false;  
          
         }
@@ -133,7 +133,7 @@ function Bootstrapper() { // Ensures the client has accurate data from the serve
     function dismissModal() {
         let n = [...modals];
         n.shift();
-        console.log(modals, n)
+       
         setModals(n)
     }
 

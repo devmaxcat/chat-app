@@ -1,7 +1,7 @@
 import React, { useReducer, useState } from 'react'
 
 function valueReducer(values, action) {
-   
+
     switch (action.type) {
         case true: {
             if (!values.find((e) => e === action.value))
@@ -28,9 +28,9 @@ function valueReducer(values, action) {
 export default function GenericSelectionMenu({ list, title, context, onSelectionComplete }) {
     const [query, setQuery] = useState('')
     const [values, dispatch] = useReducer(valueReducer, [])
-    
+
     const sortedArray = list.sort((a, b) => b.username.indexOf(query) - a.username.indexOf(query)).filter((e) => e.username.indexOf(query) != -1);
-    
+
 
     function handleSelection(state, value) {
         dispatch({
@@ -45,8 +45,11 @@ export default function GenericSelectionMenu({ list, title, context, onSelection
 
         <div className='selection-modal'>
             <div className='top'>
-                <h3>{title}</h3>
-                <p>Select Recipients</p>
+                <div className='row'>
+                    <h3>{title}</h3>
+                    <p>Select Recipients</p>
+                </div>
+
                 <i className='fa-solid fa-x' onClick={() => context.close()}></i>
             </div>
             <div className='input-wrapper'>

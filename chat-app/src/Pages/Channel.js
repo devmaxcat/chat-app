@@ -8,6 +8,7 @@ import UserContextMenu from '../Shared/ContextMenu/UserContextMenu'
 import useContextMenu from '../Shared/ContextMenu/useContextMenu'
 import GenericSelectionMenu from '../Shared/SelectionMenu/GenericSelectionMenu'
 import useSelectionMenu from '../Shared/SelectionMenu/useSelectionMenu'
+import User from '../ProfileDrop'
 
 
 
@@ -39,12 +40,12 @@ function ChannelName({ channel }) {
             <img src={channel.icon}></img>
             <span key={channel._id}>
                 <div className='input-wrapper disabled-plaintext' onClick={() => { if (channel.type != 0) setEditing(true) }}>
-                    {isEditable ? 
-                    (<input min-width='3rem' className={editing} defaultValue={channel.name} disabled={!editing} onBlur={(e) => { updateChannelName(e.currentTarget.value) }} ></input>)
-                    :
-                    (<input min-width='3rem' defaultValue={channel.name} disabled={true}></input>)
-                }
-                    
+                    {isEditable ?
+                        (<input min-width='3rem' className={editing} defaultValue={channel.name} disabled={!editing} onBlur={(e) => { updateChannelName(e.currentTarget.value) }} ></input>)
+                        :
+                        (<input min-width='3rem' defaultValue={channel.name} disabled={true}></input>)
+                    }
+
 
 
                     {/* <div>{channelData.recipients.length} Members</div> */}
@@ -65,7 +66,7 @@ function ChannelAdd({ channel }) {
 
     let sortFriends = friends.filter((e) => !recipients.includes(e._id))
 
-    console.log(friends)
+
 
 
 
@@ -98,7 +99,7 @@ export default function Channel() {
     const channelData = channels.find((e) => e._id == channelid)
     const navigate = useNavigate()
     let userData = useContext(UserContext)
-
+    console.log('HISTORY', history)
     const client = useContext(ClientContext)
 
     let gettingHistory = false;
@@ -119,6 +120,12 @@ export default function Channel() {
     //     }
     // }, 'channellistener_deleted')
 
+    const pushTempHistory = function (msg) {
+        msg.temporary = true
+
+        setHistory([msg, ...history])
+    }
+
 
     useEffect(() => { historyReference.current = history }, [history])
     useEffect(() => {
@@ -126,9 +133,9 @@ export default function Channel() {
 
 
         client.on('MessageRecieved', (data) => {
-            console.log('MessageRecieved', data)
+            // console.log('MessageRecieved', data)
             if (data.channel_id === channelid) {
-                setHistory([data, ...historyReference.current])
+                setHistory([data, ...historyReference.current.filter(e => !e.temporary)])
             }
         })
 
@@ -150,6 +157,9 @@ export default function Channel() {
             })
         return () => { return }
     }, [client, location, channelid])
+    useEffect(() => {
+        setHistory([])
+    }, [channelid])
     let channelName;
     let channelIconURL;
     if (channelData?.type == 0) {
@@ -213,7 +223,7 @@ export default function Channel() {
 
 
                     </div>
-                    <MessageBar key={channelid} channelid={channelid}></MessageBar>
+                    <MessageBar key={channelid} channelid={channelid} pushTempHistory={pushTempHistory}></MessageBar>
                 </div>
                 <div className='channel-info'>
                     <div className='input-wrapper'>
@@ -241,6 +251,7 @@ var moment = require('moment');
 let lastRenderedMessage = null
 function Message({ data, previous, index, history }) {
     const requester = useContext(RequestContext)
+
     const [embeds, setEmbeds] = useState(function () {
         let embedded = []
         if (data.media) {
@@ -274,7 +285,7 @@ function Message({ data, previous, index, history }) {
     //         }
     //     });
     // }, [])
-    console.log('EMBEDS', embeds)
+
 
 
 
@@ -286,7 +297,7 @@ function Message({ data, previous, index, history }) {
     let componentizedText = data.text_content.split(' ').map((e) => {
         if (requester.testURL(e)) {
 
-            return (<a href={e}> {e} </a>)
+            return (<a target='_blank' href={e}> {e} </a>)
 
         } else {
             return " " + e + " "
@@ -303,28 +314,31 @@ function Message({ data, previous, index, history }) {
 
     MessageIconURL = data.author?.icon || '/default-user-pfp.webp'
 
+
     // if the last message was sent by the same person and it hasn't been more than 5 minutes, then combine the messages together.
     if ((previous?.author._id == data.author._id) && (new Date(data.createdAt).getTime() - new Date(previous?.createdAt).getTime() < 300000) && (index != history.length - 1)) {
 
 
         return (
-            <div className='message collapsed'>
+            <div className={`message collapsed ${data.temporary ? 'temp' : ''}`}>
                 <div className='gutter'></div>
                 <div>
                     <div>
                         {componentizedText}
 
                     </div>
-                    {embeds.map((e) => { console.log(e); return (<MessageEmbed embed={e} />) })}
+                    <div className='attachments'>
+                    {embeds.map((e) => { return (<MessageEmbed embed={e} />) })}
+                    </div>
 
                 </div>
             </div>
         )
 
     } else {
-
+        if (data.temporary) console.log('remptoary rendner', data)
         return (
-            <div className='message'>
+            <div className={`message ${data.temporary ? 'temp' : ''}`}>
                 <div className='pfp'>
                     <img src={MessageIconURL}></img>
                 </div>
@@ -341,7 +355,10 @@ function Message({ data, previous, index, history }) {
                         {componentizedText}
 
                     </div>
-                    {embeds.map((e) => { console.log(e); return (<MessageEmbed embed={e} />) })}
+                    <div className='attachments'>
+                    {embeds.map((e) => { return (<MessageEmbed embed={e} />) })}
+                    </div>
+                    
                 </div>
             </div>
         )
@@ -351,17 +368,42 @@ function Message({ data, previous, index, history }) {
 
 }
 
-function MessageEmbed({ embed }) {
+function MessageEmbed({ embed, progress }) {
     return (
         <div className='embed'>
+
             {
                 function () {
-                    if (embed.resource_type == 'image') {
+                    if (embed.resource_type == 'image' && embed.url.includes('.pdf')) {
+                        return (
+                            <div className='message-file-embed'>
+                                <div>
+                                    <div className='row space-between'>
+                                        <div>{embed?.context?.custom?.original_name || embed.display_name}</div>
+                                        <a target='_blank' className='fa-solid fa-arrow-up-right-from-square grey' ></a>
+                                    </div>
+                                    <embed src={embed.url}></embed>
+                                    <div className='row'>
+                                    <a target='_blank' download={embed?.context?.custom?.original_name || embed.display_name} href={embed.url} className='fa-solid fa-download' ></a>
+                                        <div>{embed.bytes + ' bytes'}</div>
+                                      
+                                    </div>
+
+                                </div>
+
+
+                            </div>
+
+                        )
+
+                    }
+                    else if (embed.resource_type == 'image') {
                         return (
 
-                            <img src={embed.url}></img>
+                            <img className='message-media-image' src={embed.url}></img>
                         )
                     }
+
                     else if (true) {
                         return (
                             <a href={embed.secure_url} className='raw'>
@@ -426,9 +468,11 @@ function messageMediaReducer(values, action) {
     }
 }
 
-function MessageBar({ channelid }) {
+function MessageBar({ channelid, pushTempHistory }) {
     const [media, mediaDispatcher] = useReducer(messageMediaReducer, [])
-    console.log('meida', media)
+    const [uploadState, setUploadState] = useState(-1)
+    const userData = useContext(UserContext)
+
     return (
         <div className='input-wrapper message-bar'>
             <div className='attached-media'> {
@@ -436,14 +480,9 @@ function MessageBar({ channelid }) {
                     <div className='message-media-preview'>
 
                         <i className='fa-solid fa-x' onClick={() => mediaDispatcher({ type: 'remove', data: file })}>
-                            <svg width="250" height="250" viewBox="0 0 250 250">
-                                <circle class="bg"
-                                    cx="125" cy="125" r="115" fill="none" stroke="#555" stroke-width="30"
-                                ></circle>
-                                <circle class="fg"
-                                    cx="125" cy="125" r="115" fill="none" stroke="#FFFFFF" stroke-width="30"
-                                    stroke-dasharray="100"
-                                ></circle>
+                            <svg style={{ '--progress': uploadState }} width="250" height="250" viewBox="0 0 250 250" class="circular-progress">
+                                <circle class="bg"></circle>
+                                <circle class="fg"></circle>
                             </svg>
                         </i>
                         <img src={URL.createObjectURL(file)}></img>
@@ -458,17 +497,21 @@ function MessageBar({ channelid }) {
             }} onKeyPress={(event) => {
                 if ((event.key) === "Enter") {
                     let formdata = new FormData()
+                   // pushTempHistory({ author: userData, channel_id: formdata.get('channel_id'), text_content: formdata.get('text_content'), media: media.map((e) => { return { secure_url: URL.createObjectURL(e), url: URL.createObjectURL(e), resource_type: 'image' } }), createdAt: new Date().toISOString() })
                     formdata.append('text_content', event.target.value)
                     formdata.append('channel_id', channelid)
                     for (let file of media) {
                         formdata.append(file.name, file);
                     }
+                   
+                   
 
                     event.preventDefault();
                     const xhr = new XMLHttpRequest();
                     xhr.upload.addEventListener('progress', function (event) {
                         if (event.lengthComputable) {
                             const percentComplete = (event.loaded / event.total) * 100;
+                            setUploadState(percentComplete)
                             console.log(Math.round(percentComplete))
                         }
                     })
@@ -485,6 +528,7 @@ function MessageBar({ channelid }) {
                         if (xhr.readyState === XMLHttpRequest.DONE) {
                             if (xhr.status >= 200 && xhr.status < 300) {
                                 mediaDispatcher({ type: 'reset' })
+
                                 event.target.value = ''
                             } else {
 

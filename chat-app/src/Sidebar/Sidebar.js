@@ -30,7 +30,9 @@ export default function Sidebar() {
                     <Channels></Channels>
                     </div>
                     <div>
-                    <Link className={`channel-selector ${location.pathname.includes('friends') ? 'focused' : ''}`} to={"/me/friends"}><i class="fa-solid fa-user-plus"></i>Friends</Link>
+                   
+                    <Link className={`channel-selector ${location.pathname.includes('friends') ? 'focused' : ''}`} to={"/me/friends"}><i class="fa-solid fa-users"></i>Friends</Link>
+                    {/* <Link className={`channel-selector ${location.pathname.includes('forum') ? 'focused' : ''}`} to={"/me/friends"}><i class="fa-solid fa-comments"></i>Forums</Link> */}
                     <Link className={`channel-selector ${location.pathname.includes('alerts') ? 'focused' : ''}`} to={"/me/alerts"}><i class="fa-regular fa-rectangle-list"></i>Change Log</Link>
                     </div>
                    

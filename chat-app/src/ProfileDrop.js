@@ -28,10 +28,10 @@ export default function User() {
                     <Link to={'/me/settings/profile'} className="action-button">
                         Edit Profile
                     </Link>
-                    <button className="action-button">
+                    <button className="action-button secondary-grey">
                         Copy User ID
                     </button>
-                    <button className="action-button" onClick={() => {
+                    <button className="action-button secondary-grey" onClick={() => {
                         fetch('http://localhost:443/api/auth/logout', {
                             method: 'POST',
                             credentials: 'include',

@@ -53,7 +53,7 @@ export function TAccount() {
     } = useForm({
         defaultValues: {
             username: userData.username,
-           
+
         }
 
     })
@@ -74,7 +74,7 @@ export function TAccount() {
         })
             .then((response) => response.json())
             .then(async (data) => {
-               
+
                 if (!data.error) {
                     userData.refreshUser()
                 } else {
@@ -86,9 +86,9 @@ export function TAccount() {
     useEffect(() => { // Watches input updates
         const subscription = watch((value, { name, type }) => {
             setFormValues(value)
-          
+
         });
-        return () => { subscription.unsubscribe();  };
+        return () => { subscription.unsubscribe(); };
 
     }, [watch])
 
@@ -97,25 +97,32 @@ export function TAccount() {
         <>
             <form className='form' id='profileEditForm' >
                 <h3>Account</h3>
-            
+
                 <label>Username</label>
                 <div className='input-wrapper'>
                     <input name='username' id='username'  {...register("username", { required: true })}></input>
                 </div>
+                <div className='description-label'>You can only change your username twice in 14 days.</div>
                 <label>Email</label>
                 <div className='input-wrapper'>
                     <input name='email' id='email'  {...register("email", { required: true })}></input>
                 </div>
-               
-              
-                <label>Password</label>
-               
-                    <a>Change Password</a>
-              
-                    <label>Connected Accounts</label>
 
+
+                <label>Password</label>
+
+                <a>Change Password</a>
+
+
+
+                <label>Connected Accounts</label>
+                <div className='oauth-provider'>
+                    AccName
+                </div>
                 
-               
+
+
+
             </form>
         </>
     )
