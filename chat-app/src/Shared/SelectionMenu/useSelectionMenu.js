@@ -7,6 +7,9 @@ export default function useSelectionMenu() {
             x: 0,
             y: 0
         },
+        close: function () {
+            setContext({...this, open: false})
+        }
     })
 
 

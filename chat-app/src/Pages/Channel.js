@@ -18,7 +18,7 @@ function ChannelName({ channel }) {
     const [editing, setEditing] = useState(false);
     const requester = useContext(RequestContext)
     const channels = useContext(ChannelsContext)
-
+    let isEditable = channel.type != 0
     async function updateChannelName(name) {
         let data = await requester(true, '/api/channel/update', 'POST', true, {
             channelid: channel._id,
@@ -39,8 +39,12 @@ function ChannelName({ channel }) {
             <img src={channel.icon}></img>
             <span key={channel._id}>
                 <div className='input-wrapper disabled-plaintext' onClick={() => { if (channel.type != 0) setEditing(true) }}>
-
-                    <input min-width='3rem' className={editing} defaultValue={channel.name} disabled={!editing} onBlur={(e) => { updateChannelName(e.currentTarget.value) }} ></input>
+                    {isEditable ? 
+                    (<input min-width='3rem' className={editing} defaultValue={channel.name} disabled={!editing} onBlur={(e) => { updateChannelName(e.currentTarget.value) }} ></input>)
+                    :
+                    (<input min-width='3rem' defaultValue={channel.name} disabled={true}></input>)
+                }
+                    
 
 
                     {/* <div>{channelData.recipients.length} Members</div> */}
