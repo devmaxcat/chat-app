@@ -135,6 +135,18 @@ export default function Chat() {
           
             if (!data.error) {
                 data.refresh = refreshChannels
+                data.changeChannelName = async function(channelid, name, callback) {
+                    let data = await requester(true, '/api/channel/update', 'POST', true, {
+                        channelid: channelid,
+                        name: name
+                    })
+                    if (!data.error) {
+                        channels.refresh()
+                        if (callback) {callback(data)}
+                        
+                    }
+            
+                }
                 setChannels(data)
             } else {
                 setChannels(null)
@@ -195,6 +207,14 @@ export default function Chat() {
         }
         refreshChannels()
         refreshFriends()
+        function updateChannelOrder(msg) {
+            let n = [...channels]
+            let f = n.find(e => e._id == msg.channel_id)
+            let nn = n.filter(e => e !== f)
+            nn.unshift(f)
+            setChannels(nn)
+        }
+        client.on('MessageRecieved', updateChannelOrder)
         client.on('FriendRequest', refreshFriends)
         client.on('ChannelUpdate', refreshChannels)
         return () => {

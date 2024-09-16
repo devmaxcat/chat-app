@@ -2241,3 +2241,12 @@ input[type='checkbox']:checked::before {
     --progress: 100;
   }
 }
+
+@media screen and (max-width: 800px) {
+  .channel-info {
+    display: none !important;
+  }
+  .messages-outer {
+    width: 100%;
+  }
+}

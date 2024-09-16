@@ -16,7 +16,7 @@ export default function Channels() {
 
 
 
-    let [sortedChannels, setSortedChannels] = useState(channels)
+    let [sortedChannels, setSortedChannels] = useState(channels.sort((a, b) => a.lastActiveTime > b.lastActiveTime))
 
     function updateChannelOrder(data) {
         if (data) { }
@@ -91,19 +91,21 @@ function ChannelItem({ data }) {
 
         <Link className={`channel-selector ${extraclass}`} to={'/me/channel/' + data._id} onContextMenu={handleClick()}>
             {data?.type == 0 ?
-            ( <UserContextMenu user={DMUser} context={context} />) 
-            : 
-            ( <GroupDMContextMenu channel={data} context={context} />)    
-        }
-           
+                (<UserContextMenu user={DMUser} context={context} />)
+                :
+                (<GroupDMContextMenu channel={data} context={context} />)
+            }
+
             <div class="profile-small">
                 <div class="pfp">
                     <img src={channelIconURL}></img>
                     <ActivityIcon user={DMUser} />
                 </div></div>
-
-            <div className='title'>{channelName}
+            <div className='input-wrapper disabled-plaintext'>
+                <input className='title' defaultValue={channelName} disabled>
+                </input>
             </div>
+
         </Link>
 
 

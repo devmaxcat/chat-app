@@ -12,6 +12,10 @@ export default function GroupDMContextMenu({ channel, context }) {
   const location = useLocation()
   const navigate = useNavigate()
   const requester = useContext(RequestContext)
+
+  let leave = () => {
+    modalservice.addModal(new Modal('CONFIRM', `Are you sure you want to unfriend ${user?.displayName || user.username}?\n\nThey will not be notified.`, [new ModalAction('Cancel', 'dismiss', 'secondary-grey'), new ModalAction('Confirm', (dismisser) => { friends.remove(user._id, true); dismisser() }, 'red')]));
+  }
  
 
   const buttons = [
