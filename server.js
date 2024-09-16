@@ -71,7 +71,8 @@ const sessionware = session({
   httpOnly: true,
   secure: true,
   maxAge: 1000 * 60 * 60 * 7,
-  rolling: true
+  rolling: true,
+  domain: process.env.CORS_ALLOW_ORIGIN
   // store: MongoStore.create({
   //     mongoUrl: 'MongoDB URL should be here'
   // })
