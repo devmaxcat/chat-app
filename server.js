@@ -68,12 +68,19 @@ app.all('/*', function (req, res, next) {
 const sessionware = session({
   name: 'example.sid',
   secret: 'Replace with your secret key',
-  httpOnly: true,
-  secure: true,
+
+ 
   maxAge: 1000 * 60 * 60 * 7,
   rolling: true,
   domain: process.env.CORS_ALLOW_ORIGIN,
-  sameSite: 'none',
+  cookie: {
+    sameSite: process.env.CORS_ALLOW_ORIGIN.includes('localhost') ? 'lax' : 'none',
+    secure: process.env.CORS_ALLOW_ORIGIN.includes('localhost') ? false : true,
+    httpOnly: true,
+
+    maxAge: 1000 * 60 * 60 * 7
+  }
+
   // store: MongoStore.create({
   //     mongoUrl: 'MongoDB URL should be here'
   // })
