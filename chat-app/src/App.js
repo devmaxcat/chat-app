@@ -11,7 +11,7 @@ import Home from './Static/Pages/Home';
 
 const requester = async function (isApi, resourceUri, method, expectJson, body) {
 
-    let URL = isApi ? 'http://localhost:443' + resourceUri : resourceUri
+    let URL = isApi ? process.env.REACT_APP_API_URI + resourceUri : resourceUri
     let response;
    
     try {
