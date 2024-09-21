@@ -32,7 +32,7 @@ export default function User() {
                         Copy User ID
                     </button>
                     <button className="action-button secondary-grey" onClick={() => {
-                        fetch('http://localhost:443/api/auth/logout', {
+                        fetch(`${process.env.REACT_APP_API_URI}/api/auth/logout`, {
                             method: 'POST',
                             credentials: 'include',
                             headers: {

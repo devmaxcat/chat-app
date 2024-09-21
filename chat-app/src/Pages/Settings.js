@@ -6,6 +6,7 @@ import { Alert, AlertAction, AlertContext } from '../Chat'
 import moment from 'moment'
 import { Link } from 'react-router-dom'
 
+
 const converter = {
     'profile': <TProfile />,
     'account': <TAccount />,
@@ -64,7 +65,7 @@ export function TAccount() {
         const profileEditForm = document.getElementById('profileEditForm')
         setResponseError('')
 
-        fetch('http://localhost:443/api/profile/update', {
+        fetch(`${process.env.REACT_APP_API_URI}/api/profile/update`, {
             method: 'POST',
             credentials: 'include',
             headers: {
@@ -161,7 +162,7 @@ export function TProfile() {
         const profileEditForm = document.getElementById('profileEditForm')
         setResponseError('')
 
-        fetch('http://localhost:443/api/profile/update', {
+        fetch(`${process.env.REACT_APP_API_URI}/api/profile/update`, {
             method: 'POST',
             credentials: 'include',
             headers: {
