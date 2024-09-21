@@ -74,9 +74,9 @@ const sessionware = session({
   rolling: true,
   domain: process.env.CORS_ALLOW_ORIGIN,
   cookie: {
-    sameSite: process.env.CORS_ALLOW_ORIGIN.includes('localhost') ? 'lax' : 'none',
-    secure: process.env.CORS_ALLOW_ORIGIN.includes('localhost') ? false : true,
-    httpOnly: true,
+    // sameSite: process.env.CORS_ALLOW_ORIGIN.includes('localhost') ? 'lax' : 'none',
+    // secure: process.env.CORS_ALLOW_ORIGIN.includes('localhost') ? false : true,
+    // httpOnly: true,
 
     maxAge: 1000 * 60 * 60 * 7
   }
