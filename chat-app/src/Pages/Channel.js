@@ -12,6 +12,7 @@ import User from '../ProfileDrop'
 
 
 
+
 let reachedEnd = false;
 
 
@@ -133,7 +134,7 @@ export default function Channel() {
 
 
 
-        fetch('http://localhost:443/api/message/history?' + new URLSearchParams({ channelid: channelid }), {
+        fetch(`${process.env.REACT_APP_API_URI}/api/message/history?` + new URLSearchParams({ channelid: channelid }), {
             method: 'GET',
             credentials: 'include'
         })
@@ -193,7 +194,7 @@ export default function Channel() {
 
                             gettingHistory = true;
                             setHistory([...history.filter(e => e != 'LOADING'), 'LOADING'])
-                            fetch('http://localhost:443/api/message/history?' + new URLSearchParams({ channelid: channelid, cursorid: getLastKnownMessage()._id }), {
+                            fetch(`${process.env.REACT_APP_API_URI}/api/message/history?`+ new URLSearchParams({ channelid: channelid, cursorid: getLastKnownMessage()._id }), {
                                 method: 'GET',
                                 credentials: 'include'
                             })
@@ -550,7 +551,7 @@ function MessageBar({ channelid, pushTempHistory }) {
                             }
                         }
                     };
-                    xhr.open('POST', 'http://localhost:443/api/message/create', true);
+                    xhr.open('POST', `${process.env.REACT_APP_API_URI}/api/message/create`, true);
                     xhr.withCredentials = true
                     xhr.send(formdata)
 

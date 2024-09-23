@@ -15,7 +15,7 @@ export const AlertContext = createContext([])
 export const ProfileViewerContext = createContext({})
 
 function setActivityStatus(statusType) {
-    fetch('http://localhost:443/api/profile/status', {
+    fetch('http://localhost:443/api/profile/status', { // Fix this to use env api url
         method: 'POST',
         credentials: 'include',
         headers: {
@@ -98,7 +98,9 @@ export default function Chat() {
     }
 
     useEffect(() => {
-        const socket = io.connect('http://localhost:443', {
+
+
+        const socket = io.connect(process.env.REACT_APP_API_URI, {
             withCredentials: true,
             transports: ['websocket']
 
