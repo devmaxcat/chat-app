@@ -88,7 +88,9 @@ exports.create = async (req, res, next) => {
 
 
   let message = await (await Message.create({channel_id, text_content, author, media})).populate('author', ExposableFields)
-  
+  let channel = await Channel.findById(channel_id)
+  channel.lastActiveTime = new Date().toISOString()
+  await channel.save()
   io.to(message.channel_id.toString()).emit("MessageRecieved", message)
   res.status(200).json(message)
 }

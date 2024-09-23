@@ -13,7 +13,7 @@ exports.get = async (req, res, next) => { // Gets a logged in user's channels th
 
   //let user = User.findById(sessionData.id)
   let data;
-  data = await Channel.find({ recipients: { $in: [sessionData._id] } }).populate('recipients', ExposableFields, User) // TODO: Sort by last sent message??
+  data = await Channel.find({ recipients: { $in: [sessionData._id] } }).sort({lastActiveTime: -1}).populate('recipients', ExposableFields, User) // TODO: Sort by last sent message??
 
   console.log('channel get', )
   res.status(200).json(data)
