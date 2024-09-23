@@ -2,6 +2,7 @@ import { useContext, useState } from "react";
 import { useNavigate } from "react-router";
 import { UserContext } from "./App";
 import { Link } from "react-router-dom";
+import ActivityIcon from "./Profile/ActivityIcon";
 
 export default function User() {
     const navigate = useNavigate()
@@ -21,10 +22,17 @@ export default function User() {
 
                 <i class="fa-solid fa-chevron-down"></i>
                 <div className={`profile-dropdown-menu`}>
-                    <img src={user.icon}></img>
-                    {user ? user.displayName : ''}<br />
-                    {user ? user.username : ''}
+                    <div className='profile-small w-interact'>
+                      
+                        <div className='pfp'>
+                            <img src={user?.icon || '/default-user-pfp.webp'}></img>
+                            <ActivityIcon user={user} />
+                        </div>
+
+                        {user.displayName || user.username}
+                    </div>
                   
+
                     <Link to={'/me/settings/profile'} className="action-button">
                         Edit Profile
                     </Link>
@@ -41,7 +49,7 @@ export default function User() {
                         })
                             .then((response) => response.json())
                             .then((data) => {
-                                
+
                                 navigate('/login')
                                 window.location.reload()
                             })

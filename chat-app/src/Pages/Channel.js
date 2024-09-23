@@ -20,7 +20,7 @@ function ChannelName({ channel }) {
     const requester = useContext(RequestContext)
     const channels = useContext(ChannelsContext)
     let isEditable = channel.type != 0
-   
+
 
     useEffect(() => { setEditing(false) }, [channel])
 
@@ -52,9 +52,9 @@ function ChannelAdd({ channel }) {
     const navigate = useNavigate()
     const { context, handleClick } = useSelectionMenu()
 
-    let recipients = channel.recipients.map(e => e._id)
+    let recipients = channel.recipients.map(e => e?._id)
 
-    let sortFriends = friends.filter((e) => !recipients.includes(e._id))
+    let sortFriends = friends.filter((e) => !recipients.includes(e?._id))
 
 
 
@@ -73,7 +73,7 @@ function ChannelAdd({ channel }) {
     return (
         <div>
             <i class="fa-solid fa-user-plus" onClick={handleClick()}></i>
-            {context.open ? (<GenericSelectionMenu title={'Add Friends'} list={sortFriends} context={context} onSelectionComplete={onSelectionComplete}></GenericSelectionMenu>) : ('')}
+            {context.open ? (<GenericSelectionMenu title={'Add Friends'} action={`Add to "${channel.name}"`} list={sortFriends} context={context} onSelectionComplete={onSelectionComplete}></GenericSelectionMenu>) : ('')}
         </div>
     )
 }
@@ -86,16 +86,18 @@ export default function Channel() {
     const historyReference = useRef(history)
     const location = useLocation()
     const channels = useContext(ChannelsContext)
-    const channelData = channels.find((e) => e._id == channelid)
+    const channelData = channels.find((e) => e?._id == channelid)
     const navigate = useNavigate()
     let userData = useContext(UserContext)
     console.log('HISTORY', history)
     const client = useContext(ClientContext)
 
     let gettingHistory = false;
+    let reachedEnd = false;
 
     function getLastKnownMessage() {
-        return history[history.length - 1]
+        let cleanHistory = history.filter(e => e != 'LOADING')
+        return cleanHistory[cleanHistory.length - 1] || { _id: null }
     }
 
 
@@ -120,14 +122,16 @@ export default function Channel() {
     useEffect(() => { historyReference.current = history }, [history])
     useEffect(() => {
 
-
-
-        client.on('MessageRecieved', (data) => {
+        function onMessageRecieived(data) {
             // console.log('MessageRecieved', data)
             if (data.channel_id === channelid) {
                 setHistory([data, ...historyReference.current.filter(e => !e.temporary)])
             }
-        })
+        }
+
+
+
+
 
         fetch('http://localhost:443/api/message/history?' + new URLSearchParams({ channelid: channelid }), {
             method: 'GET',
@@ -145,10 +149,14 @@ export default function Channel() {
                 }
 
             })
-        return () => { return }
+        client.on('MessageRecieved', onMessageRecieived)
+        return () => {
+            client.off('MessageRecieved', onMessageRecieived)
+        }
     }, [client, location, channelid])
     useEffect(() => {
-        setHistory([])
+
+        setHistory(['LOADING'])
     }, [channelid])
     let channelName;
     let channelIconURL;
@@ -171,18 +179,20 @@ export default function Channel() {
             <div className='pane-topbar'>
                 <ChannelName channel={channelData}></ChannelName>
 
-                <ChannelAdd key={channelData._id} channel={channelData}></ChannelAdd>
+                {channelData?.type != 0 ? (<ChannelAdd key={channelData._id} channel={channelData}></ChannelAdd>) : ''}
             </div>
 
-            <div className='channel'>
+            <div className={`channel`}>
 
                 <div className='messages-outer'>
 
 
                     <div className='messages' onScroll={(event) => {
                         //console.log(event.target.scrollTop, (event.target.scrollHeight - event.target.clientHeight) * -1)
-                        if (Math.abs(event.target.scrollTop) > (event.target.scrollHeight - event.target.clientHeight) - 300 && gettingHistory == false) {
+                        if (Math.abs(event.target.scrollTop) > (event.target.scrollHeight - event.target.clientHeight) - 300 && gettingHistory == false && !history.reachedEnd) {
+
                             gettingHistory = true;
+                            setHistory([...history.filter(e => e != 'LOADING'), 'LOADING'])
                             fetch('http://localhost:443/api/message/history?' + new URLSearchParams({ channelid: channelid, cursorid: getLastKnownMessage()._id }), {
                                 method: 'GET',
                                 credentials: 'include'
@@ -190,25 +200,37 @@ export default function Channel() {
                                 .then((response) => response.json())
                                 .then((data) => {
                                     gettingHistory = false;
+
                                     if (data.length != 0) {
-                                        setHistory([...history, ...data])
-                                        reachedEnd = true;
+                                        setHistory([...history.filter(e => e != 'LOADING'), ...data])
+
+                                    } else {
+                                        let newHistory = history.filter(e => e != 'LOADING')
+                                        newHistory.reachedEnd = true
+                                        setHistory(newHistory)
                                     }
 
                                 })
                         }
                     }}>
 
-                        {/* {history.length == 0 ? (<div className='no-message-history'><img src={'/static-content/no-message-history.webp'}></img>Send a message!</div>) : ''} */}
-                        {history.map((v, i) => (<Message key={v._id} data={v} previous={history[i + 1]} index={i} history={history} />))}
-                        {(<div className='no-message-history'>
+
+                        {history.map((v, i) => {
+                            if (v == 'LOADING') {
+                                return (<MessageSkeletonBuffer></MessageSkeletonBuffer>)
+                            } else {
+                                let cleanHistory = history.filter(e => e != 'LOADING')
+                                return (<Message key={v._id} data={v} previous={cleanHistory[cleanHistory.indexOf(v) + 1]} index={i} history={cleanHistory} />)
+                            }
+                        })}
+                        {history.length == 0 ? (<div className='no-message-history'>
                             <div className='title'>
                                 <img src={channelIconURL}></img>
                                 <div>{channelName}</div>
                             </div>
 
                             Send a message!
-                        </div>)}
+                        </div>) : undefined}
                         {/* {!reachedEnd ? <MessageSkeletonBuffer key={Math.random()}></MessageSkeletonBuffer> : ''} */}
 
 
@@ -364,6 +386,7 @@ function MessageEmbed({ embed, progress }) {
 
             {
                 function () {
+                    console.log('EMBED', embed)
                     if (embed.resource_type == 'image' && embed.url.includes('.pdf')) {
                         return (
                             <div className='message-file-embed'>
@@ -390,7 +413,7 @@ function MessageEmbed({ embed, progress }) {
                     else if (embed.resource_type == 'image') {
                         return (
 
-                            <img className='message-media-image' src={embed.url}></img>
+                            <img style={{ width: embed.width + 'px', height: embed.height + 'px', aspectRatio: `${embed.width}/${embed.height}` }} className='message-media-image' src={embed.url}></img>
                         )
                     }
 
@@ -487,10 +510,10 @@ function MessageBar({ channelid, pushTempHistory }) {
             }} onKeyPress={(event) => {
                 if ((event.key) === "Enter") {
                     let formdata = new FormData()
-                   
+
                     formdata.append('text_content', event.target.value)
                     formdata.append('channel_id', channelid)
- event.target.value = ''
+                    event.target.value = ''
                     pushTempHistory({ author: userData, channel_id: formdata.get('channel_id'), text_content: formdata.get('text_content'), media: media.map((e) => { return { secure_url: URL.createObjectURL(e), url: URL.createObjectURL(e), resource_type: 'image' } }), createdAt: new Date().toISOString() })
                     for (let file of media) {
                         formdata.append(file.name, file);
@@ -521,7 +544,7 @@ function MessageBar({ channelid, pushTempHistory }) {
                             if (xhr.status >= 200 && xhr.status < 300) {
                                 mediaDispatcher({ type: 'reset' })
 
-                               
+
                             } else {
 
                             }

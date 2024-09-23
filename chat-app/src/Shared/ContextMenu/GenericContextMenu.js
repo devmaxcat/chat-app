@@ -79,7 +79,7 @@ function ContextItem({ item }) {
   }
 
   return (
-    <div className='context-item' onMouseUp={(e) => e.stopPropagation()} onClick={(e) => { item.callback() }}>
+    <div className='context-item'  onMouseUp={(e) => { item.callback() }}> 
       <div className='context-label-container'>
         {item.label}
         <div className='context-keybind'>

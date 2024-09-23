@@ -34,14 +34,14 @@ export default function Channels() {
     const [filter, setFilter] = useState('All')
 
     const filters = {
-        "All": (e) => 1 == 1,
-        "DM": (e) => e.type == 0,
-        "Group": (e) => e.type == 1,
+        "All": (e) => 1 == 1 && e,
+        "DM": (e) => e.type == 0 && e,
+        "Group": (e) => e.type == 1 && e,
     }
 
 
     let filteredChannels = sortedChannels.filter(filters[filter])
-
+    console.log('WHY ERROR', channels)
     return (
         <>
             <div className='filter-tabs'>

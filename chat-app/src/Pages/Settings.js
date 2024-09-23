@@ -30,7 +30,7 @@ export default function Settings() {
                 <Link className='channel-selector' to='/me/settings/profile' >Profile</Link>
                 <Link className='channel-selector' to='/me/settings/activity' >Activity Status</Link>
             </div>
-            <div>
+            <div className='settings-outer'>
                 {tab}
             </div>
         </div>
@@ -40,7 +40,8 @@ export default function Settings() {
 export function TAccount() {
     const userData = useContext(UserContext)
     const alerts = useContext(AlertContext)
-
+    const [editing, setEditing] = useState(false)
+ 
     const [responseError, setResponseError] = useState('')
 
     const {
@@ -82,7 +83,7 @@ export function TAccount() {
                 }
             })
     }
-    console.log(userData.joindate)
+    
     useEffect(() => { // Watches input updates
         const subscription = watch((value, { name, type }) => {
             setFormValues(value)
@@ -95,17 +96,25 @@ export function TAccount() {
 
     return (
         <>
-            <form className='form' id='profileEditForm' >
+            <form className='form' id='accountEditForm' >
+                <div className='headline'>
                 <h3>Account</h3>
+                <a>
+                <i onClick={() => setEditing(true)} className='fa-solid fa-pencil'></i>
+                </a>
+                </div>
+                
+               
+               
 
                 <label>Username</label>
                 <div className='input-wrapper'>
-                    <input name='username' id='username'  {...register("username", { required: true })}></input>
+                    <input disabled={!editing} name='username' id='username'  {...register("username", { required: true })}></input>
                 </div>
                 <div className='description-label'>You can only change your username twice in 14 days.</div>
                 <label>Email</label>
                 <div className='input-wrapper'>
-                    <input name='email' id='email'  {...register("email", { required: true })}></input>
+                    <input disabled={!editing} name='email' id='email'  {...register("email", { required: true })}></input>
                 </div>
 
 
@@ -122,7 +131,7 @@ export function TAccount() {
                 
 
 
-
+                <button className='action-button'>Save</button>
             </form>
         </>
     )

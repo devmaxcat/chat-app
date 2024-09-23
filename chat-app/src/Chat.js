@@ -7,10 +7,12 @@ import ProfileDrop from './ProfileDrop'
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import Call from './Call';
 import { io } from "socket.io-client";
+import moment from 'moment';
 export const ClientContext = createContext(null)
 export const ChannelsContext = createContext(null)
 export const FriendsContext = createContext(null)
 export const AlertContext = createContext([])
+export const ProfileViewerContext = createContext({})
 
 function setActivityStatus(statusType) {
     fetch('http://localhost:443/api/profile/status', {
@@ -62,6 +64,19 @@ export default function Chat() {
     const [friendRequests, setFriendRequests] = useState([])
     const [client, setClient] = useState(null)
     const [alerts, setAlerts] = useState([])
+    const [profileViewer, setProfileViewer] = useState({
+        current: null,
+        open(user) {
+            let me = { ...profileViewer }
+            me.current = user
+            setProfileViewer(me)
+        },
+        close() {
+            let me = { ...profileViewer }
+            me.current = null
+            setProfileViewer(me)
+        }
+    })
 
     function alert(alert) {
         let newArray = [alert, ...alerts]
@@ -83,8 +98,6 @@ export default function Chat() {
     }
 
     useEffect(() => {
-
-
         const socket = io.connect('http://localhost:443', {
             withCredentials: true,
             transports: ['websocket']
@@ -132,20 +145,20 @@ export default function Chat() {
         async function refreshChannels() {
             setActivityStatus(1)
             let data = await requester(true, '/api/channel/get', 'GET', true)
-          
+
             if (!data.error) {
                 data.refresh = refreshChannels
-                data.changeChannelName = async function(channelid, name, callback) {
+                data.changeChannelName = async function (channelid, name, callback) {
                     let data = await requester(true, '/api/channel/update', 'POST', true, {
                         channelid: channelid,
                         name: name
                     })
                     if (!data.error) {
                         channels.refresh()
-                        if (callback) {callback(data)}
-                        
+                        if (callback) { callback(data) }
+
                     }
-            
+
                 }
                 setChannels(data)
             } else {
@@ -157,18 +170,18 @@ export default function Chat() {
             let data = await requester(true, '/api/friend/get', 'GET', true)
 
             if (!data.error) {
-                data.refresh = () => {refreshFriends(); refreshChannels()}
+                data.refresh = () => { refreshFriends(); refreshChannels() }
                 data.send = async function (to, useid) {
                     console.log(to)
                     let data = await requester(true, '/api/friend/create', 'POST', true, { to: to, useid })
                     if (!data.error) {
-                      
+
                         return {}
                     } else {
                         return data
                     }
                 }
-                data.asFriendsList = function() {
+                data.asFriendsList = function () { // returns array of user objects that are 100% the current user's friends.
                     let acceptedFriendRequests = data.filter((e) => e.status == 1)
                     let actualFriends = acceptedFriendRequests.flatMap(({ to, from }) => [to, from]).filter(u => u._id !== user._id);
                     return actualFriends
@@ -176,7 +189,7 @@ export default function Chat() {
                 data.remove = async function (userId) {
                     let data = await requester(true, '/api/friend/unfriend', 'POST', true, { userId })
                     if (!data.error) {
-                       
+
                         return {}
                     } else {
                         return data
@@ -185,7 +198,7 @@ export default function Chat() {
                 data.respond = async function (id, status) {
                     let data = await requester(true, '/api/friend/respond', 'POST', true, { id, status })
                     if (!data.error) {
-                       
+
                         return {}
                     } else {
                         return data
@@ -207,57 +220,64 @@ export default function Chat() {
         }
         refreshChannels()
         refreshFriends()
-        function updateChannelOrder(msg) {
-            let n = [...channels]
-            let f = n.find(e => e._id == msg.channel_id)
-            let nn = n.filter(e => e !== f)
-            nn.unshift(f)
-            setChannels(nn)
-        }
-        client.on('MessageRecieved', updateChannelOrder)
+        // function updateChannelOrder(msg) {
+        //     let n = [...channels]
+        //     let f = n.find(e => e._id == msg.channel_id)
+        //     let nn = n.filter(e => e !== f)
+        //     nn.unshift(f)
+        //     setChannels(nn)
+        // }
+        //client.on('MessageRecieved', updateChannelOrder)
         client.on('FriendRequest', refreshFriends)
         client.on('ChannelUpdate', refreshChannels)
+
         return () => {
             client.off('FriendRequest', refreshFriends)
             client.off('ChannelUpdate', refreshChannels)
 
         }
+
     }, [location, client])
 
     if (!(client && friendRequests && friendRequests.isFriends && channels)) {
         return
     }
 
+
+
     return (
         <ClientContext.Provider value={client}>
             <ChannelsContext.Provider value={channels}>
                 <FriendsContext.Provider value={friendRequests}>
-                    <AlertContext.Provider value={{ alerts, alert, dismiss, Alert, AlertAction }}>
-                        <div id='app-outer'>
-                            <div className='alerts-container'>
-                                {alerts.slice(0, 3).map((e) => <Alerts key={e.id} alert={e}></Alerts>)}
-                            </div>
-
-                            <div id='topbar'>
-                                <div className='logo animated'><a>C</a><a>h</a><a>a</a><a>t</a> <a>A</a><a>p</a><a>p</a>
-                                </div>
-                                <div className='topbar-right'>
-                                    <Link className="fa-solid fa-gear i-link settings" to={'/me/settings'}></Link>
-                                    <ProfileDrop></ProfileDrop>
-
+                    <ProfileViewerContext.Provider value={profileViewer}>
+                        <AlertContext.Provider value={{ alerts, alert, dismiss, Alert, AlertAction }}>
+                            <div id='app-outer'>
+                                <ProfileViewer></ProfileViewer>
+                                <div className='alerts-container'>
+                                    {alerts.slice(0, 3).map((e) => <Alerts key={e.id} alert={e}></Alerts>)}
                                 </div>
 
+                                <div id='topbar'>
+                                    <div className='logo animated'><a>C</a><a>h</a><a>a</a><a>t</a> <a>A</a><a>p</a><a>p</a>
+                                    </div>
+                                    <div className='topbar-right'>
+                                        <Link className="fa-solid fa-gear i-link settings" to={'/me/settings'}></Link>
+                                        <ProfileDrop></ProfileDrop>
+
+                                    </div>
+
+                                </div>
+                                <div id='chat'>
+                                    <Call></Call>
+
+                                    <Sidebar></Sidebar>
+                                    <Pane></Pane>
+
+
+                                </div>
                             </div>
-                            <div id='chat'>
-                                <Call></Call>
-
-                                <Sidebar></Sidebar>
-                                <Pane></Pane>
-
-
-                            </div>
-                        </div>
-                    </AlertContext.Provider>
+                        </AlertContext.Provider>
+                    </ProfileViewerContext.Provider>
                 </FriendsContext.Provider>
             </ChannelsContext.Provider>
         </ClientContext.Provider>
@@ -290,6 +310,55 @@ function Alerts({ alert }) {
                 </div>
                 <div className='dismiss'>
                     {alert.behavior !== 3 ? <i className='fa-solid fa-x' onClick={() => { alertsContext.dismiss(alert) }}></i> : ''}
+                </div>
+            </div>
+
+        </div>
+
+    )
+}
+
+function ProfileViewer() {
+    let Viewer = useContext(ProfileViewerContext)
+    console.log('Viewer', Viewer.current)
+    // this might be updated to accept a user object, then fetch request more info about that particular user
+    if (!Viewer.current) {
+        return
+    }
+    let user = Viewer.current
+    return (
+        <div className='profile-viewer'>
+            <div class="profile">
+                <div className='top-right-actions'>
+                    <i className='action-circle fa-solid fa-ellipsis'></i>
+                    <i className='action-circle fa-solid fa-x' onClick={Viewer.close}></i>
+
+                </div>
+
+                <div class="bg-img">
+                    <img src="https://i0.wp.com/static.vecteezy.com/system/resources/previews/006/852/804/non_2x/abstract-blue-background-simple-design-for-your-website-free-vector.jpg?ssl=1" />
+
+                </div>
+                <div class="top">
+                    <div class=" pfp">
+                        <img src={user?.icon || '/default-user-pfp.webp'} />
+
+                    </div>
+                    <div class="name">
+                        <div class="display-name">{user.displayName}</div>
+                        <div class="username">{user.username}</div>
+                    </div>
+                </div>
+                {user.bio ? (<>
+                    <h4>About</h4>
+                    <div className='bio'>
+                        {user.bio}
+                    </div>
+                </>) : ''}
+                <div>
+                    <div>
+                        <h5>Date Joined</h5>{moment(user.createdAt).format('LL')}
+                    </div>
                 </div>
             </div>
 

@@ -1,10 +1,9 @@
 import React, { useEffect, useState, useContext, act } from 'react'
-import Chat from './Chat'
-import Pane from './Pane'
-import Friends from './Pages/Friends';
-import Channel from './Pages/Channel';
 import { BrowserRouter, Link, Outlet, Route, Routes, useLocation, useNavigate } from 'react-router-dom'
 
+import Chat from './Chat'
+import Friends from './Pages/Friends';
+import Channel from './Pages/Channel';
 import Settings from './Pages/Settings';
 import Auth from './Auth/Auth';
 import Home from './Static/Pages/Home';
@@ -142,10 +141,10 @@ function Bootstrapper() { // Ensures the client has accurate data from the serve
         let data = await requester(true, '/api/auth/self', 'GET', true)
         if (!data.error) {
             data.refresh = updateUserContext
-            data.refreshUser = updateUserContext
+            data.refreshUser = updateUserContext // for compatibility, please fix.
             setuserdata(data)
         } else if (data.error == 'Unauthorized') {
-            setuserdata({ error: 'Unauthorized', refreshUser: updateUserContext })
+            setuserdata({ error: 'Unauthorized', refreshUser: updateUserContext, refresh: updateUserContext })
         }
         setLoading(true)
 

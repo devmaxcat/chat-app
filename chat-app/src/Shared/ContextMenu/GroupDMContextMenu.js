@@ -14,7 +14,7 @@ export default function GroupDMContextMenu({ channel, context }) {
   const requester = useContext(RequestContext)
 
   let leave = () => {
-    modalservice.addModal(new Modal('CONFIRM', `Are you sure you want to unfriend ${user?.displayName || user.username}?\n\nThey will not be notified.`, [new ModalAction('Cancel', 'dismiss', 'secondary-grey'), new ModalAction('Confirm', (dismisser) => { friends.remove(user._id, true); dismisser() }, 'red')]));
+    modalservice.addModal(new Modal('CONFIRM', `Are you sure you want to leave "${channel.name}"?`, [new ModalAction('Cancel', 'dismiss', 'secondary-grey'), new ModalAction('Confirm', (dismisser) => { dismisser() }, 'red')]));
   }
  
 
@@ -28,6 +28,8 @@ export default function GroupDMContextMenu({ channel, context }) {
     {
       label: 'Leave',
       callback: async () => {
+        leave()
+        return 
         let data = await requester(true, '/api/channel/leave', 'POST', true, {channelid: channel._id})
         if (!data.error) {
           channels.refresh()

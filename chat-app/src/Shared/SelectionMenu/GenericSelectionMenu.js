@@ -25,7 +25,7 @@ function valueReducer(values, action) {
     }
 }
 
-export default function GenericSelectionMenu({ list, title, context, onSelectionComplete }) {
+export default function GenericSelectionMenu({ list, title, context, onSelectionComplete, action }) {
     const [query, setQuery] = useState('')
     const [values, dispatch] = useReducer(valueReducer, [])
 
@@ -79,7 +79,7 @@ export default function GenericSelectionMenu({ list, title, context, onSelection
 
             </div>
 
-            <button className='action-button' onClick={() => onSelectionComplete(values)}>Create Channel</button>
+            <button className='action-button' onClick={() => onSelectionComplete(values)}>{action}</button>
         </div>
 
     )

@@ -35,7 +35,7 @@ function UserSelectionMenu({ users, context }) {
         }
     }
     return (
-        <GenericSelectionMenu context={context} title={'Create Channel'} list={users} onSelectionComplete={onSelectionComplete}></GenericSelectionMenu>
+        <GenericSelectionMenu context={context} title={'New Group'} list={users} action={'Create Group'} onSelectionComplete={onSelectionComplete}></GenericSelectionMenu>
     )
 }
 
