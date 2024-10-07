@@ -14,8 +14,11 @@ export const FriendsContext = createContext(null)
 export const AlertContext = createContext([])
 export const ProfileViewerContext = createContext({})
 
-function setActivityStatus(statusType) {
-    fetch('http://localhost:443/api/profile/status', { // Fix this to use env api url
+function setActivityStatus(statusType, user) {
+    if (user?.status?.type == -1) {
+        return
+    }
+    fetch(`${process.env.REACT_APP_API_URI}/api/profile/status`, {
         method: 'POST',
         credentials: 'include',
         headers: {
@@ -145,7 +148,7 @@ export default function Chat() {
     useEffect(() => {
         if (!client) { return }
         async function refreshChannels() {
-            setActivityStatus(1)
+            setActivityStatus(1, user)
             let data = await requester(true, '/api/channel/get', 'GET', true)
 
             if (!data.error) {

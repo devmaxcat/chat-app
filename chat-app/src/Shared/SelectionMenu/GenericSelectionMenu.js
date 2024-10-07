@@ -9,6 +9,7 @@ function valueReducer(values, action) {
                     ...values,
                     action.value
                 ]
+            return values
         }
         case false: {
             return values.filter((e) => e !== action.value)
@@ -22,6 +23,9 @@ function valueReducer(values, action) {
                 return valueReducer(values, action)
             }
         }
+        default: {
+            console.error('No action provided.')
+        }
     }
 }
 
@@ -33,6 +37,7 @@ export default function GenericSelectionMenu({ list, title, context, onSelection
 
 
     function handleSelection(state, value) {
+        setQuery('')
         dispatch({
             type: state,
             value: value
@@ -50,26 +55,43 @@ export default function GenericSelectionMenu({ list, title, context, onSelection
                     <p>Select Recipients</p>
                 </div>
 
-                <i className='fa-solid fa-x' onClick={() => context.close()}></i>
+                <span tabIndex={sortedArray.length + 1} className='material-symbols-outlined' onClick={() => context.close()}>close</span>
             </div>
             <div className='input-wrapper'>
 
                 <div className='dropdown-selections'>
 
-                    {values.map((e) => (<span className='dropdown-selection'> {e.username}</span>))}
+                    {values.map((e) => (<span className='dropdown-selection'><img src={e.icon}></img> {e.username} <span onClick={(event) => { handleSelection(false, e) }} class="x material-symbols-outlined">
+                        close
+                    </span></span>))}
                 </div>
 
                 <input
+                tabIndex={1}
                     type="text"
                     value={query}
                     onChange={(e) => setQuery(e.target.value)}
+                    onKeyDown={(e) => {
+                        if (e.code === 'Enter') {
+                            handleSelection(true, sortedArray[0])
+                        }
+                        if (e.code === 'Backspace' && query === '') {
+                            
+                            handleSelection(false, values[values.length-1])
+                            setQuery(values[values.length-1].username)
+                            
+                        }
+                    }}
                     placeholder="Search..."
                 />
 
             </div>
             <div className='values'>
-                {sortedArray.map((user) => (
-                    <div key={user._id} className='profile-small' onClick={() => handleSelection('toggle', user)}>
+                {sortedArray.map((user, index) => (
+                    <div tabIndex={index + 1} key={user._id} onKeyDown={(e) => {
+                        if (e.code === 'Enter') {
+                            handleSelection('toggle', user)
+                        }}} className='profile-small' onClick={() => handleSelection('toggle', user)}>
                         <input type='checkbox' checked={values.some((e) => e === user)}></input>
                         <img className='pfp' src={user.icon}></img>
                         <div className='name'>
@@ -79,7 +101,7 @@ export default function GenericSelectionMenu({ list, title, context, onSelection
 
             </div>
 
-            <button className='action-button' onClick={() => onSelectionComplete(values)}>{action}</button>
+            <button tabIndex={sortedArray.length} className='action-button' onClick={() => onSelectionComplete(values)}>{action}</button>
         </div>
 
     )

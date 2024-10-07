@@ -20,10 +20,12 @@ export default function User() {
                     {user ? user.displayName || user.username : ''}
                 </div>
 
-                <i class="fa-solid fa-chevron-down"></i>
+                <i class={`material-symbols-outlined ${isOpen ? 'flip-180' : ''}`}>
+                    keyboard_arrow_down
+                </i>
                 <div className={`profile-dropdown-menu`}>
                     <div className='profile-small w-interact'>
-                      
+
                         <div className='pfp'>
                             <img src={user?.icon || '/default-user-pfp.webp'}></img>
                             <ActivityIcon user={user} />
@@ -31,7 +33,7 @@ export default function User() {
 
                         {user.displayName || user.username}
                     </div>
-                  
+
 
                     <Link to={'/me/settings/profile'} className="action-button">
                         Edit Profile

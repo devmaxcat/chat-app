@@ -9,7 +9,7 @@ import useContextMenu from '../Shared/ContextMenu/useContextMenu'
 import GenericSelectionMenu from '../Shared/SelectionMenu/GenericSelectionMenu'
 import useSelectionMenu from '../Shared/SelectionMenu/useSelectionMenu'
 import User from '../ProfileDrop'
-
+import { Remarkable } from 'remarkable';
 
 
 
@@ -194,7 +194,7 @@ export default function Channel() {
 
                             gettingHistory = true;
                             setHistory([...history.filter(e => e != 'LOADING'), 'LOADING'])
-                            fetch(`${process.env.REACT_APP_API_URI}/api/message/history?`+ new URLSearchParams({ channelid: channelid, cursorid: getLastKnownMessage()._id }), {
+                            fetch(`${process.env.REACT_APP_API_URI}/api/message/history?` + new URLSearchParams({ channelid: channelid, cursorid: getLastKnownMessage()._id }), {
                                 method: 'GET',
                                 credentials: 'include'
                             })
@@ -261,6 +261,26 @@ export default function Channel() {
 
 var moment = require('moment');
 
+
+
+var md = new Remarkable({
+    html: false,        // Enable HTML tags in source
+    xhtmlOut: false,        // Use '/' to close single tags (<br />)
+    breaks: false,        // Convert '\n' in paragraphs into <br>
+    langPrefix: 'language-',  // CSS language prefix for fenced blocks
+
+    // Enable some language-neutral replacement + quotes beautification
+    typographer: false,
+
+    // Double + single quotes replacement pairs, when typographer enabled,
+    // and smartquotes on. Set doubles to '«»' for Russian, '„“' for German.
+    quotes: '“”‘’',
+
+    // Highlighter function. Should return escaped HTML,
+    // or '' if the source string is not changed
+    highlight: function (/*str, lang*/) { return ''; }
+});
+
 let lastRenderedMessage = null
 function Message({ data, previous, index, history }) {
     const requester = useContext(RequestContext)
@@ -307,16 +327,19 @@ function Message({ data, previous, index, history }) {
     let time = moment(data.createdAt)
     let now = moment()
     let displaytime;
-    let componentizedText = data.text_content.split(' ').map((e) => {
-        if (requester.testURL(e)) {
+    // let componentizedText = data.text_content.slice(0, 1000).split(' ').map((e) => {
+    //     if (requester.testURL(e)) {
 
-            return (<a target='_blank' href={e}> {e} </a>)
+    //         return (<a target='_blank' href={e}> {e} </a>)
 
-        } else {
-            return " " + e + " "
-        }
+    //     } else {
+    //         return " " + e + " "
+    //     }
 
-    })
+    // })
+    if (data.text_content.length > 1000) {
+        data.text_content = data.text_content.slice(0,1000) + '...'
+    }
     if (time.isSame(moment(), 'day')) {
 
         displaytime = time.fromNow()
@@ -335,16 +358,12 @@ function Message({ data, previous, index, history }) {
         return (
             <div className={`message collapsed ${data.temporary ? 'temp' : ''}`}>
                 <div className='gutter'></div>
-                <div>
-                    <div>
-                        {componentizedText}
-
-                    </div>
-                    <div className='attachments'>
-                        {embeds.map((e) => { return (<MessageEmbed embed={e} />) })}
-                    </div>
-
+                <div className='text-content' dangerouslySetInnerHTML={{ __html: md.render(data.text_content) }}></div>
+                <div className='attachments'>
+                    {embeds.map((e) => { return (<MessageEmbed embed={e} />) })}
                 </div>
+
+
             </div>
         )
 
@@ -364,15 +383,14 @@ function Message({ data, previous, index, history }) {
                             {displaytime}
                         </div>
                     </div>
-                    <div>
-                        {componentizedText}
-
-                    </div>
+                    <div className='text-content' dangerouslySetInnerHTML={{ __html: md.render(data.text_content) }}></div>
                     <div className='attachments'>
                         {embeds.map((e) => { return (<MessageEmbed embed={e} />) })}
                     </div>
 
                 </div>
+
+
             </div>
         )
     }
@@ -414,7 +432,7 @@ function MessageEmbed({ embed, progress }) {
                     else if (embed.resource_type == 'image') {
                         return (
 
-                            <img style={{ width: embed.width + 'px', height: embed.height + 'px', aspectRatio: `${embed.width}/${embed.height}` }} className='message-media-image' src={embed.url}></img>
+                            <img style={{ width: embed.width + 'px', height: embed.height + 'px', aspectRatio: `${embed.width}/${embed.height}` }} className='message-media-image' src={embed.url} onLoad={(e) => { e.target.classList.add('loaded') }} onError={(e) => e.target.classList.add('error')}></img>
                         )
                     }
 
@@ -485,10 +503,49 @@ function messageMediaReducer(values, action) {
 function MessageBar({ channelid, pushTempHistory }) {
     const [media, mediaDispatcher] = useReducer(messageMediaReducer, [])
     const [uploadState, setUploadState] = useState(-1)
+    const [isDragging, setIsDragging] = useState(false)
     const userData = useContext(UserContext)
 
+    useEffect(() => {
+        function enter() {
+            setIsDragging(true)
+        }
+
+        function exit() {
+            setIsDragging(false)
+        }
+        document.addEventListener('dragenter', enter)
+        document.addEventListener('dragexit', exit)
+        return () => {
+            document.removeEventListener('dragenter', enter)
+            document.removeEventListener('dragexit', exit)
+        }
+    })
+
     return (
-        <div className='input-wrapper message-bar'>
+        <div className={`input-wrapper message-bar ${isDragging ? 'file-drop' : ''}`} onDrop={(ev) => {
+            ev.preventDefault()
+            console.log('drag', ev)
+
+
+            if (ev.dataTransfer.items) {
+                // Use DataTransferItemList interface to access the file(s)
+                [...ev.dataTransfer.items].forEach((item, i) => {
+                    // If dropped items aren't files, reject them
+                    if (item.kind === "file") {
+                        const file = item.getAsFile();
+                        mediaDispatcher({ type: 'add', data: file })
+
+                    }
+                });
+            } else {
+                // Use DataTransfer interface to access the file(s)
+                [...ev.dataTransfer.files].forEach((file, i) => {
+                    mediaDispatcher({ type: 'add', data: file })
+                });
+            }
+
+        }} >
             <div className='attached-media'> {
                 media.map(file => (
                     <div className='message-media-preview'>
@@ -503,13 +560,14 @@ function MessageBar({ channelid, pushTempHistory }) {
                     </div>
                 ))}
             </div>
+
             <textarea placeholder='Type a message' onPasteCapture={(e) => {
                 if (e.clipboardData.files[0]) {
                     mediaDispatcher({ type: 'add', data: e.clipboardData.files[0] })
                 }
 
             }} onKeyPress={(event) => {
-                if ((event.key) === "Enter") {
+                if ((event.key) === "Enter" && !event.shiftKey) {
                     let formdata = new FormData()
 
                     formdata.append('text_content', event.target.value)
@@ -557,6 +615,7 @@ function MessageBar({ channelid, pushTempHistory }) {
 
                 }
             }} ></textarea>
+            {/* <button className='action-button'></button> */}
         </div>
     )
 }
