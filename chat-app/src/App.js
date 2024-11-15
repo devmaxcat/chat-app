@@ -197,7 +197,7 @@ function ModalWindow({ modal }) {
     }
     return (
         <div className='modal-outer'>
-            <div className='modal'>
+            <div className='modal' tabIndex={-1} role='dialog'>
                 <div className='title'>
                     {modal.title}
                 </div>
@@ -220,8 +220,8 @@ function ModalActionButton({ action }) {
         action.callback = modalService.dismissModal
     }
     return (
-        <div className={`action-button ${action.style}`} onClick={() => { action.callback(modalService.dismissModal) }}>
+        <button className={`action-button ${action.style}`} onClick={() => { action.callback(modalService.dismissModal) }}>
             {action.label}
-        </div>
+        </button>
     )
 }

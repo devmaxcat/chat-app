@@ -1,6 +1,7 @@
 import React, { useContext } from 'react'
 import { Link } from 'react-router-dom'
 import { UserContext } from '../App'
+import ProfilePicture from '../Shared/ProfilePicture'
 
 function Header() {
     const userData = useContext(UserContext)
@@ -22,7 +23,8 @@ function Header() {
                         :
                         (<>
                             <Link to={'/me/friends'} className='pfp'>
-                                <img src={userData.icon}></img>
+                                <ProfilePicture entity={userData}></ProfilePicture>
+
                             </Link>
                         </>)
 

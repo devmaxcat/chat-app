@@ -1,5 +1,8 @@
 // This is once the user has been authorized, nothing useful to a do-wronger can be found here so its okay to be on the client.
-import { React, createContext, useContext, useEffect, useState } from 'react'
+import { React, createContext, useContext, useEffect, useState, createPortal } from 'react'
+
+import ReactDOM from 'react-dom';
+
 import { RequestContext, UserContext } from "./App";
 import Sidebar from './Sidebar/Sidebar';
 import Pane from './Pane';
@@ -8,6 +11,9 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import Call from './Call';
 import { io } from "socket.io-client";
 import moment from 'moment';
+import ProfilePicture from './Shared/ProfilePicture';
+import useContextMenu from './Shared/ContextMenu/useContextMenu';
+import UserContextMenu from './Shared/ContextMenu/UserContextMenu';
 export const ClientContext = createContext(null)
 export const ChannelsContext = createContext(null)
 export const FriendsContext = createContext(null)
@@ -154,16 +160,27 @@ export default function Chat() {
             if (!data.error) {
                 data.refresh = refreshChannels
                 data.changeChannelName = async function (channelid, name, callback) {
+                    
                     let data = await requester(true, '/api/channel/update', 'POST', true, {
                         channelid: channelid,
                         name: name
                     })
                     if (!data.error) {
-                        channels.refresh()
+                       
                         if (callback) { callback(data) }
 
                     }
 
+                }
+                data.leave = async function name(channelid, callback) {
+                    let data = await requester(true, '/api/channel/leave', 'POST', true, {channelid})
+                  
+                    if (!data.error) {
+                       
+                        if (location.pathname.includes(channelid)) navigate('/me/friends')
+                        if (callback) { callback(data) }
+
+                    }
                 }
                 setChannels(data)
             } else {
@@ -325,7 +342,8 @@ function Alerts({ alert }) {
 
 function ProfileViewer() {
     let Viewer = useContext(ProfileViewerContext)
-    console.log('Viewer', Viewer.current)
+    let {handleClick, context} =  useContextMenu()
+
     // this might be updated to accept a user object, then fetch request more info about that particular user
     if (!Viewer.current) {
         return
@@ -334,8 +352,10 @@ function ProfileViewer() {
     return (
         <div className='profile-viewer'>
             <div class="profile">
-                <div className='top-right-actions'>
-                    <i className='action-circle fa-solid fa-ellipsis'></i>
+                <div className='top-right-actions' >
+                    <i className='action-circle fa-solid fa-ellipsis' onClick={handleClick()}></i>
+                    {ReactDOM.createPortal(<UserContextMenu context={context} user={Viewer.current}></UserContextMenu>, document.querySelector('body'))}
+                    
                     <i className='action-circle fa-solid fa-x' onClick={Viewer.close}></i>
 
                 </div>
@@ -346,7 +366,8 @@ function ProfileViewer() {
                 </div>
                 <div class="top">
                     <div class=" pfp">
-                        <img src={user?.icon || '/default-user-pfp.webp'} />
+                        <ProfilePicture entity={user}></ProfilePicture>
+                       
 
                     </div>
                     <div class="name">

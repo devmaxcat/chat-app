@@ -1,4 +1,5 @@
 import React, { useEffect } from 'react'
+import ReactDOM from 'react-dom'
 import useUserSelection from '../../Hooks/useUserSelection'
 
 document.oncontextmenu = function (e) {
@@ -32,11 +33,11 @@ export default function GenericContextMenu({ buttons, title, context }) {
 
 
   useEffect(() => {
-    if (context.open) {
-      context.target?.classList.add('f-force')
-    } else {
-      context.target?.classList.remove('f-force')
-    }
+    // if (context.open) {
+    //   context.target?.classList.add('f-force')
+    // } else {
+    //   context.target?.classList.remove('f-force')
+    // }
     return () => {context.target?.classList.remove('f-force')}
     
   }, [context])
@@ -55,13 +56,13 @@ export default function GenericContextMenu({ buttons, title, context }) {
     return (<></>)
   }
 
-  return (
+  return ReactDOM.createPortal(
     <div className='context-menu' style={{ left: context.position.x + 3, top: context.position.y + 3 }}>
       <div className='title'>
         {title}
       </div>
       {buttons.map((item, i) => (<ContextItem key={i} item={item} />))}
-    </div>
+    </div>, document.querySelector('body')
   )
 }
 

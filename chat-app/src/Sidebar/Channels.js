@@ -8,6 +8,8 @@ import Friends from '../Pages/Friends'
 import useContextMenu from '../Shared/ContextMenu/useContextMenu'
 import UserContextMenu from '../Shared/ContextMenu/UserContextMenu'
 import GroupDMContextMenu from '../Shared/ContextMenu/GroupDMContextMenu'
+import ImageWrapper from '../Shared/ImageWrapper'
+import ProfilePicture from '../Shared/ProfilePicture'
 
 
 export default function Channels() {
@@ -65,7 +67,7 @@ function ChannelItem({ data }) {
     let userData = useContext(UserContext)
     let channelName;
     let channelIconURL;
-    let extraclass;
+    let extraclass ='';
     const {
         handleClick,
         context,
@@ -74,7 +76,10 @@ function ChannelItem({ data }) {
     const location = useLocation()
 
     if (location.pathname.includes(`me/channel/${data._id}`)) {
-        extraclass = 'focused'
+        extraclass += ' focused'
+    }
+    if (data.unread > 0) {
+        extraclass += ' unread'
     }
     let DMUser;
     if (data?.type == 0) {
@@ -82,7 +87,7 @@ function ChannelItem({ data }) {
         channelName = DMUser?.displayName || DMUser.username
         channelIconURL = DMUser?.icon || '/default-user-pfp.webp'
     } else {
-        DMUser = { activityStatus: { statusType: -1 } }
+        DMUser = { name: data.name, icon: data?.icon, activityStatus: { statusType: -1 } }
         channelName = data.name
         channelIconURL = data?.icon || '/default-group-pfp.webp'
     }
@@ -98,12 +103,21 @@ function ChannelItem({ data }) {
 
             <div class="profile-small">
                 <div class="pfp">
-                    <img src={channelIconURL}></img>
+                    <ProfilePicture entity={DMUser}></ProfilePicture>
+
                     <ActivityIcon user={DMUser} />
                 </div></div>
             <div className='input-wrapper disabled-plaintext'>
                 <input className='title' defaultValue={channelName} disabled>
                 </input>
+                {data.unread}
+            </div>
+            <div className='top-right-actions' >
+                <button className='action-circle fa-solid fa-ellipsis' onClick={handleClick()}></button>
+
+
+
+
             </div>
 
         </Link>

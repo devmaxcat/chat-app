@@ -29,7 +29,7 @@ export default function GroupDMContextMenu({ channel, context }) {
       label: 'Leave',
       callback: async () => {
         leave()
-        return 
+       channel.leave(channel)
         let data = await requester(true, '/api/channel/leave', 'POST', true, {channelid: channel._id})
         if (!data.error) {
           channels.refresh()

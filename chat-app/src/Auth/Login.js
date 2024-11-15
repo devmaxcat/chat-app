@@ -55,7 +55,7 @@ export default function Login() {
 
             <label>Password</label>
             <div className='input-wrapper'>
-                <input id='password'  {...register("password", { required: 'A password is required' })}></input>
+                <input type="password" id='password'  {...register("password", { required: 'A password is required' })}></input>
             </div>
             <span className='form-validator-text'>{errors.password?.message}</span>
 

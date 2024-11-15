@@ -1,4 +1,5 @@
 import React, { useReducer, useState } from 'react'
+import ProfilePicture from '../ProfilePicture'
 
 function valueReducer(values, action) {
 
@@ -61,7 +62,7 @@ export default function GenericSelectionMenu({ list, title, context, onSelection
 
                 <div className='dropdown-selections'>
 
-                    {values.map((e) => (<span className='dropdown-selection'><img src={e.icon}></img> {e.username} <span onClick={(event) => { handleSelection(false, e) }} class="x material-symbols-outlined">
+                    {values.map((e) => (<span className='dropdown-selection'><ProfilePicture entity={e}></ProfilePicture> {e.username} <span onClick={(event) => { handleSelection(false, e) }} class="x material-symbols-outlined">
                         close
                     </span></span>))}
                 </div>
@@ -93,7 +94,10 @@ export default function GenericSelectionMenu({ list, title, context, onSelection
                             handleSelection('toggle', user)
                         }}} className='profile-small' onClick={() => handleSelection('toggle', user)}>
                         <input type='checkbox' checked={values.some((e) => e === user)}></input>
-                        <img className='pfp' src={user.icon}></img>
+                        <div className='pfp'>
+                            <ProfilePicture entity={user}></ProfilePicture>
+                        </div>
+
                         <div className='name'>
                             {user.username}
                         </div>

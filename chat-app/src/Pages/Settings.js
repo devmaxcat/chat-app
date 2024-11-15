@@ -5,6 +5,7 @@ import { useForm } from 'react-hook-form'
 import { Alert, AlertAction, AlertContext } from '../Chat'
 import moment from 'moment'
 import { Link } from 'react-router-dom'
+import ProfilePicture from '../Shared/ProfilePicture'
 
 
 const converter = {
@@ -213,7 +214,7 @@ export function TProfile() {
                     </div>
                     <div className='top'>
                         <div className='pfp-editor pfp' onClick={() => { document.querySelector('input[name="icon"]').click() }}>
-                            <img src={profileEditImage} ></img>
+                            <ProfilePicture entity={userData} editing={profileEditImage} fallbackLetterSize='3'></ProfilePicture>
                             <input name='icon' type='file' {...register("icon", {
                                 onChange: (event) => { var reader = new FileReader(); reader.onload = (event) => { setProfileEditImage(event.target.result) }; reader.readAsDataURL(event.target.files[0]); }
                             })}></input>

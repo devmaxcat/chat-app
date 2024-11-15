@@ -6,6 +6,8 @@ import ContextMenuButton, { ContextMenu, CreateContextItem, CreateMenu } from '.
 import { MenuTemplates } from '../ContextMenu'
 import useContextMenu from '../Shared/ContextMenu/useContextMenu'
 import UserContextMenu from '../Shared/ContextMenu/UserContextMenu'
+import ImageWrapper from '../Shared/ImageWrapper'
+import ProfilePicture from '../Shared/ProfilePicture'
 
 export default function Friends() {
     const friendReqs = useContext(FriendsContext)
@@ -136,7 +138,7 @@ function Friend({ data }) {
                     <UserContextMenu user={data.to} context={context} />
                     <div className='profile-small'>
                         <div className='pfp'>
-                            <img src={data.to?.icon || '/default-user-pfp.webp'}></img>
+                        <ProfilePicture entity={data.to}></ProfilePicture>
 
                         </div>
 
@@ -159,7 +161,7 @@ function Friend({ data }) {
                     <UserContextMenu user={data.from} context={context} />
                     <div className='profile-small'>
                         <div className='pfp'>
-                            <img src={data.from?.icon || '/default-user-pfp.webp'}></img>
+                        <ProfilePicture entity={data.from}></ProfilePicture>
 
                         </div>
                         {data.from.username}
@@ -188,8 +190,8 @@ function Friend({ data }) {
                 <UserContextMenu user={friendedUser} context={context} />
                 <div className='profile-small'>
                     <div className='pfp'>
-                        <img src={friendedUser?.icon || '/default-user-pfp.webp'}></img>
-
+    
+                    <ProfilePicture entity={friendedUser}></ProfilePicture>
                     </div>
                     {friendedUser.username}
                 </div>

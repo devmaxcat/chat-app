@@ -10,6 +10,8 @@ import GenericSelectionMenu from '../Shared/SelectionMenu/GenericSelectionMenu'
 import useSelectionMenu from '../Shared/SelectionMenu/useSelectionMenu'
 import User from '../ProfileDrop'
 import { Remarkable } from 'remarkable';
+import ImageWrapper from '../Shared/ImageWrapper'
+import ProfilePicture from '../Shared/ProfilePicture'
 
 
 
@@ -86,6 +88,7 @@ export default function Channel() {
     const [history, setHistory] = useState([])
     const historyReference = useRef(history)
     const location = useLocation()
+    const requester = useContext(RequestContext)
     const channels = useContext(ChannelsContext)
     const channelData = channels.find((e) => e?._id == channelid)
     const navigate = useNavigate()
@@ -129,7 +132,7 @@ export default function Channel() {
                 setHistory([data, ...historyReference.current.filter(e => !e.temporary)])
             }
         }
-
+        
 
 
 
@@ -142,6 +145,7 @@ export default function Channel() {
             .then((data) => {
                 if (!data.error) {
                     setHistory(data)
+                    requester(true, `/api/channel/${data[0]?._id}/read`, 'POST', true)
                 } else {
                     alerts.alert(new Alert('error', data.message, data.error, 0, [], 0, 0, "fa-solid fa-ban"))
                     if (data.error == 'Unauthorized') {
@@ -156,13 +160,14 @@ export default function Channel() {
         }
     }, [client, location, channelid])
     useEffect(() => {
-
+       
         setHistory(['LOADING'])
     }, [channelid])
     let channelName;
     let channelIconURL;
+    let DMUser;
     if (channelData?.type == 0) {
-        let DMUser = channelData.recipients.find((e) => e._id != userData._id)
+        DMUser = channelData.recipients.find((e) => e._id != userData._id)
         channelName = DMUser?.displayName || DMUser?.username
         channelData.name = channelName
         channelIconURL = DMUser?.icon || '/default-user-pfp.webp'
@@ -226,6 +231,7 @@ export default function Channel() {
                         })}
                         {history.length == 0 ? (<div className='no-message-history'>
                             <div className='title'>
+                               
                                 <img src={channelIconURL}></img>
                                 <div>{channelName}</div>
                             </div>
@@ -358,10 +364,13 @@ function Message({ data, previous, index, history }) {
         return (
             <div className={`message collapsed ${data.temporary ? 'temp' : ''}`}>
                 <div className='gutter'></div>
+                <div>
                 <div className='text-content' dangerouslySetInnerHTML={{ __html: md.render(data.text_content) }}></div>
                 <div className='attachments'>
                     {embeds.map((e) => { return (<MessageEmbed embed={e} />) })}
                 </div>
+                </div>
+               
 
 
             </div>
@@ -372,7 +381,7 @@ function Message({ data, previous, index, history }) {
         return (
             <div className={`message ${data.temporary ? 'temp' : ''}`}>
                 <div className='pfp'>
-                    <img src={MessageIconURL}></img>
+                    <ProfilePicture entity={data.author}></ProfilePicture>
                 </div>
                 <div>
                     <div className='bar'>
@@ -471,7 +480,9 @@ function ChannelMember({ data }) {
         <div className='profile-small w-interact' onContextMenu={handleClick()}>
             <UserContextMenu user={data} context={context} />
             <div className='pfp'>
-                <img src={data?.icon || '/default-user-pfp.webp'}></img>
+                <ProfilePicture entity={data}></ProfilePicture>
+               
+               
                 <ActivityIcon user={data} />
             </div>
 

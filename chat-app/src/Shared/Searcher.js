@@ -1,5 +1,6 @@
 import React, { act, useContext, useEffect, useState } from 'react'
 import { RequestContext } from '../App';
+import ProfilePicture from './ProfilePicture';
 
 const Searcher = ({onSearch, children}) => {
     const requester = useContext(RequestContext)
@@ -50,7 +51,8 @@ const Searcher = ({onSearch, children}) => {
 
                     <div key={item._id} className='profile-small' >
                         <div className='pfp'>
-                            <img src={item.icon || '/default-user-pfp.webp'}></img>
+                            <ProfilePicture entity={item}></ProfilePicture>
+                           
 
                         </div>
                         {item.username}

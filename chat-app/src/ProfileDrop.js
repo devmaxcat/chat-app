@@ -3,6 +3,7 @@ import { useNavigate } from "react-router";
 import { UserContext } from "./App";
 import { Link } from "react-router-dom";
 import ActivityIcon from "./Profile/ActivityIcon";
+import ProfilePicture from "./Shared/ProfilePicture";
 
 export default function User() {
     const navigate = useNavigate()
@@ -16,7 +17,8 @@ export default function User() {
                 setIsOpen(!isOpen)
             }}>
                 <div className="smallname">
-                    <img src={user.icon}></img>
+                    <ProfilePicture entity={user}></ProfilePicture>
+                    
                     {user ? user.displayName || user.username : ''}
                 </div>
 
@@ -27,7 +29,7 @@ export default function User() {
                     <div className='profile-small w-interact'>
 
                         <div className='pfp'>
-                            <img src={user?.icon || '/default-user-pfp.webp'}></img>
+                        <ProfilePicture entity={user}></ProfilePicture>
                             <ActivityIcon user={user} />
                         </div>
 
