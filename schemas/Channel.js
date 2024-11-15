@@ -29,14 +29,7 @@ const ChannelSchema = new Mongoose.Schema({
     lastRead: {
         type: Array,
         default: [{
-            user: {
-                type: ObjectId,
-                ref: 'User'
-            },
-            timestamp: {
-                type: Date,
-                default: Date.now
-            }
+           
         }]
 
     }
