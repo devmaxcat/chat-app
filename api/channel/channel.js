@@ -21,7 +21,7 @@ exports.get = async (req, res, next) => { // Gets a logged in user's channels th
     console.log(channel.lastRead, new ObjectId(sessionData._id) )
    
     let lastRead = channel.lastRead.find(read => read.user?.equals(new ObjectId(sessionData._id)))
-    if (!lastRead) {lastRead = {user: new ObjectId(sessionData._id), timestamp: new Date().toISOString()}}
+    if (!lastRead) {lastRead = {user: new ObjectId(sessionData._id), timestamp: channel.createdAt}}
     if (lastRead) {
       let messagesSinceLastRead = await Message.countDocuments({
         channel_id: channel._id,
@@ -60,7 +60,8 @@ exports.create = async (req, res, next) => {
   channel.name = populatedChannel.recipients.map((e) => {return e.displayName || e.username}).join(', ')
   channel.save()
   channel.recipients.forEach((rid) => {
-    io.to(rid).socketsJoin(channel._id);
+    io.to(rid.toString()).socketsJoin(channel._id.toString());
+    io.to(channel._id.toString()).emit('ChannelUpdate')
   })
   
   res.status(200).json({message: 'Channel Created', channel})
@@ -90,6 +91,12 @@ exports.add = async function(req, res, next) {
     const channel = await Channel.findOne({_id: channelid})
     channel.recipients.push(...recipients.map(e => new ObjectId(e)))
     channel.save()
+
+    channel.recipients.forEach((rid) => {
+      io.to(rid.toString()).socketsJoin(channel._id.toString());
+      io.to(channel._id.toString()).emit('ChannelUpdate')
+    })
+
     res.status(200).json({channel, message: 'Channel Updated.'})
   } catch (err) {
     console.log(err)
@@ -125,6 +132,8 @@ exports.leave = async function(req, res, next) {
     if (channel.recipients.length == 0) {
       await Channel.deleteOne({_id: channel._id})
     }
+
+    
 
     res.status(200).json({channel, message: 'Channel Updated.'})
   } catch (err) {
