@@ -11,7 +11,7 @@ import useSelectionMenu from '../Shared/SelectionMenu/useSelectionMenu'
 import User from '../ProfileDrop'
 import { Remarkable } from 'remarkable';
 import ImageWrapper from '../Shared/ImageWrapper'
-import ProfilePicture from '../Shared/ProfilePicture'
+import ProfilePicture, { getAvatarFromUser } from '../Shared/ProfilePicture'
 
 
 
@@ -99,6 +99,7 @@ export default function Channel() {
     let gettingHistory = false;
     let reachedEnd = false;
 
+
     function getLastKnownMessage() {
         let cleanHistory = history.filter(e => e != 'LOADING')
         return cleanHistory[cleanHistory.length - 1] || { _id: null }
@@ -125,9 +126,10 @@ export default function Channel() {
 
     useEffect(() => { historyReference.current = history }, [history])
     useEffect(() => {
-
+      
         function onMessageRecieived(data) {
             // console.log('MessageRecieved', data)
+          
             if (data.channel_id === channelid) {
                 setHistory([data, ...historyReference.current.filter(e => !e.temporary)])
             }
@@ -163,6 +165,8 @@ export default function Channel() {
        
         setHistory(['LOADING'])
     }, [channelid])
+
+    
     let channelName;
     let channelIconURL;
     let DMUser;
@@ -179,6 +183,7 @@ export default function Channel() {
     } else {
         return
     }
+   
     return (
 
         <>

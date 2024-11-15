@@ -50,7 +50,7 @@ export default function Friends() {
     return (
         <div className='friends-outer'>
             <h1>Friends</h1>
-
+            <p>Chat app is VERY work in progress! Add @help by to report issues with the application / feature requests or improvements.</p>
             <div className='friends-inner'>
                 <div className='friends-list'>
                     <div className='filter-tabs more-space'>

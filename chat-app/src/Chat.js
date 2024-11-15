@@ -11,7 +11,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import Call from './Call';
 import { io } from "socket.io-client";
 import moment from 'moment';
-import ProfilePicture from './Shared/ProfilePicture';
+import ProfilePicture, { getAvatarFromUser } from './Shared/ProfilePicture';
 import useContextMenu from './Shared/ContextMenu/useContextMenu';
 import UserContextMenu from './Shared/ContextMenu/UserContextMenu';
 export const ClientContext = createContext(null)
@@ -160,23 +160,23 @@ export default function Chat() {
             if (!data.error) {
                 data.refresh = refreshChannels
                 data.changeChannelName = async function (channelid, name, callback) {
-                    
+
                     let data = await requester(true, '/api/channel/update', 'POST', true, {
                         channelid: channelid,
                         name: name
                     })
                     if (!data.error) {
-                       
+
                         if (callback) { callback(data) }
 
                     }
 
                 }
                 data.leave = async function name(channelid, callback) {
-                    let data = await requester(true, '/api/channel/leave', 'POST', true, {channelid})
-                  
+                    let data = await requester(true, '/api/channel/leave', 'POST', true, { channelid })
+
                     if (!data.error) {
-                       
+
                         if (location.pathname.includes(channelid)) navigate('/me/friends')
                         if (callback) { callback(data) }
 
@@ -250,20 +250,28 @@ export default function Chat() {
         //     setChannels(nn)
         // }
         //client.on('MessageRecieved', updateChannelOrder)
+        let notif;
         client.on('FriendRequest', refreshFriends)
         client.on('ChannelUpdate', refreshChannels)
+        client.on('MessageRecieved', refreshChannels)
+
 
         return () => {
             client.off('FriendRequest', refreshFriends)
             client.off('ChannelUpdate', refreshChannels)
+            client.off('MessageRecieved')
 
         }
 
     }, [location, client])
 
+
+
     if (!(client && friendRequests && friendRequests.isFriends && channels)) {
         return
     }
+
+
 
 
 
@@ -273,6 +281,7 @@ export default function Chat() {
                 <FriendsContext.Provider value={friendRequests}>
                     <ProfileViewerContext.Provider value={profileViewer}>
                         <AlertContext.Provider value={{ alerts, alert, dismiss, Alert, AlertAction }}>
+                            <NotificationHandler />
                             <div id='app-outer'>
                                 <ProfileViewer></ProfileViewer>
                                 <div className='alerts-container'>
@@ -304,6 +313,33 @@ export default function Chat() {
             </ChannelsContext.Provider>
         </ClientContext.Provider>
     )
+}
+
+function NotificationHandler() {
+    const client = useContext(ClientContext)
+    const channels = useContext(ChannelsContext)
+    const user = useContext(UserContext)
+    useEffect(() => {
+        let notif;
+        function MessageNotification(data) {
+            if (data.author._id != user._id) {
+                if (document.hidden) {
+                    let notifmsc = channels.find(e => e._id == data.channel_id)
+                   
+                    if (notif) notif.close();
+                    notif = new Notification(notifmsc.type == 0 ? data.author.username : data.author.username + ' | ' + notifmsc.name, { body: data.text_content, requireInteraction: false, icon: getAvatarFromUser(data.author) })
+
+                }
+
+            }
+        }
+        client.on('MessageRecieved', MessageNotification)
+        return () => {
+            client.off('MessageRecieved', MessageNotification)
+        }
+
+    }, [channels, client])
+    return (<></>)
 }
 
 function Alerts({ alert }) {
@@ -342,7 +378,7 @@ function Alerts({ alert }) {
 
 function ProfileViewer() {
     let Viewer = useContext(ProfileViewerContext)
-    let {handleClick, context} =  useContextMenu()
+    let { handleClick, context } = useContextMenu()
 
     // this might be updated to accept a user object, then fetch request more info about that particular user
     if (!Viewer.current) {
@@ -355,7 +391,7 @@ function ProfileViewer() {
                 <div className='top-right-actions' >
                     <i className='action-circle fa-solid fa-ellipsis' onClick={handleClick()}></i>
                     {ReactDOM.createPortal(<UserContextMenu context={context} user={Viewer.current}></UserContextMenu>, document.querySelector('body'))}
-                    
+
                     <i className='action-circle fa-solid fa-x' onClick={Viewer.close}></i>
 
                 </div>
@@ -367,7 +403,7 @@ function ProfileViewer() {
                 <div class="top">
                     <div class=" pfp">
                         <ProfilePicture entity={user}></ProfilePicture>
-                       
+
 
                     </div>
                     <div class="name">

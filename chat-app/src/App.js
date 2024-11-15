@@ -150,6 +150,7 @@ function Bootstrapper() { // Ensures the client has accurate data from the serve
 
     }
     useEffect(() => {
+        Notification.requestPermission()
         updateUserContext()
     }, [])
 
