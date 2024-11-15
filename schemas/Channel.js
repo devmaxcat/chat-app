@@ -17,15 +17,30 @@ const ChannelSchema = new Mongoose.Schema({
     },
     recipients: {
         type: Array,
-        default: [{ 
-            type: ObjectId, 
-            ref: 'user' }]
+        default: [{
+            type: ObjectId,
+            ref: 'user'
+        }]
     },
     lastActiveTime: {
         type: Date,
         default: new Date(),
+    },
+    lastRead: {
+        type: Array,
+        default: [{
+            user: {
+                type: ObjectId,
+                ref: 'User'
+            },
+            timestamp: {
+                type: Date,
+                default: Date.now
+            }
+        }]
+
     }
-}, {timestamps: true})
+}, { timestamps: true })
 
 const Channel = Mongoose.model("Channel", ChannelSchema)
 module.exports = Channel

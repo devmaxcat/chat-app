@@ -5,6 +5,7 @@ const { ObjectId } = require("mongodb")
 const MessageSchema = new Mongoose.Schema({
     text_content: {
         type: String,
+        maxLength: 1000
     },
     channel_id: {
         type: ObjectId,

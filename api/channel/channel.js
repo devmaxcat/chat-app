@@ -5,6 +5,7 @@ const { ObjectId } = require('mongodb')
 const { User, ExposableFields } = require('../../schemas/User')
 
 const { io } = require('../../server')
+const Message = require('../../schemas/Message')
 
 // this might need pagination eventually...
 exports.get = async (req, res, next) => { // Gets a logged in user's channels that they are a recieptient of
@@ -13,8 +14,27 @@ exports.get = async (req, res, next) => { // Gets a logged in user's channels th
 
   //let user = User.findById(sessionData.id)
   let data;
-  data = await Channel.find({ recipients: { $in: [sessionData._id] } }).sort({lastActiveTime: -1}).populate('recipients', ExposableFields, User) // TODO: Sort by last sent message??
+  data = await Channel.find({ recipients: { $in: [sessionData._id] } }).sort({lastActiveTime: -1}).populate('recipients', ExposableFields, User).lean() // TODO: Sort by last sent message??
+ 
 
+  for (let channel of data) {
+    console.log(channel.lastRead, new ObjectId(sessionData._id) )
+   
+    let lastRead = channel.lastRead.find(read => read.user?.equals(new ObjectId(sessionData._id)))
+    if (!lastRead) {lastRead = {user: new ObjectId(sessionData._id), timestamp: new Date().toISOString()}}
+    if (lastRead) {
+      let messagesSinceLastRead = await Message.countDocuments({
+        channel_id: channel._id,
+        createdAt: { $gt: lastRead.timestamp }
+      })
+      channel.unread = messagesSinceLastRead
+      
+    } else {
+      channel.unread = 0
+    }
+    console.log(channel.unread)
+  }
+  
   console.log('channel get', )
   res.status(200).json(data)
 }

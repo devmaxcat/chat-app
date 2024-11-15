@@ -12,6 +12,8 @@ exports.history = async (req, res, next) => {
   let sessionData = req.session?.user
   let user = req.session?.user
 
+  
+
   if (!req.query.channelid || !ObjectId.isValid(req.query?.channelid)) {
     res.status(400).json({
       message: 'Channel parameter is invalid',
@@ -37,6 +39,20 @@ exports.history = async (req, res, next) => {
     })
     return
   }
+
+  await Channel.updateOne(
+    { _id: req.query.channelid },
+    { 
+      $pull: { lastRead: { user: new ObjectId(sessionData._id) } }
+    }
+  );
+  
+  await Channel.updateOne(
+    { _id: req.query.channelid },
+    { 
+      $push: { lastRead: { user: new ObjectId(sessionData._id), timestamp: new Date() } }
+    }
+  );
 
   let data;
   if (req.query.cursorid && req.query.cursorid != 'null') {
@@ -91,6 +107,20 @@ exports.create = async (req, res, next) => {
   let channel = await Channel.findById(channel_id)
   channel.lastActiveTime = new Date().toISOString()
   await channel.save()
+  await Channel.updateOne(
+    { _id: channel_id},
+    { 
+      $pull: { lastRead: { user: new ObjectId(user._id) } }
+    }
+  );
+  
+  await Channel.updateOne(
+    { _id: channel_id },
+    { 
+      $push: { lastRead: { user: new ObjectId(user._id), timestamp: new Date() } }
+    }
+  );
+
   io.to(message.channel_id.toString()).emit("MessageRecieved", message)
   res.status(200).json(message)
 }
