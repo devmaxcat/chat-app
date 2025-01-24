@@ -57,7 +57,7 @@ export default function MessageSkeletonBuffer() {
 
 
     )
-}
+} 
 
 function FakeMessageHead({ e }) {
     return (<div className='message'>

@@ -357,7 +357,9 @@ code {
 }
 
 .channel {
-  display: flex;
+  display: grid;
+  grid-template-rows: auto 1fr;
+  grid-template-columns: 1fr 16em;
   height: 100%;
   width: 100%;
   overflow: hidden;
@@ -418,12 +420,17 @@ code {
   box-sizing: border-box;
   padding: 1rem;
   padding-top: 0;
+  grid-column: 2;
+  grid-row: 2;
 }
 
 .messages-outer {
+  grid-column: 1;
+  grid-row: 2;
   display: flex;
-  width: calc(100% - 16em);
+  width: 100%;
   flex-direction: column;
+  min-height: 0;
 }
 
 #topbar {
@@ -2694,4 +2701,15 @@ input[type='checkbox']:checked::before {
   color: white;
   background-color: #00000082;
   border-radius: 50%;
+}
+
+.call {
+background-color: var(--background-accent-color);
+  grid-row: 1;
+  grid-column: 1 / 3;
+}
+
+.participant {
+  background-color: lightgray;
+  border-radius: 5px;
 }

@@ -299,7 +299,7 @@ export default function Chat() {
 
                                 </div>
                                 <div id='chat'>
-                                    <Call></Call>
+                                  
 
                                     <Sidebar></Sidebar>
                                     <Pane></Pane>

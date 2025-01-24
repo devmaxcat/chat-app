@@ -12,6 +12,7 @@ import User from '../ProfileDrop'
 import { Remarkable } from 'remarkable';
 import ImageWrapper from '../Shared/ImageWrapper'
 import ProfilePicture, { getAvatarFromUser } from '../Shared/ProfilePicture'
+import Call from '../Call'
 
 
 
@@ -194,7 +195,7 @@ export default function Channel() {
             </div>
 
             <div className={`channel`}>
-
+                <Call channelid={channelid}></Call>
                 <div className='messages-outer'>
 
 
