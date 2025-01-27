@@ -2,13 +2,14 @@ import React, { useContext, useEffect, useRef, useState } from 'react';
 import { RequestContext } from './App';
 import { useParams } from 'react-router';
 import { ChannelsContext } from './Chat';
+import ProfilePicture from './Shared/ProfilePicture';
 const Metered = window.Metered;
 
 const $ = function (selector) {
   return document.querySelector(selector);
 }
 
-export default function Call({}) {
+export default function Call({ }) {
   const { channelid } = useParams()
   const channels = useContext(ChannelsContext)
   const channel = channels.find((e) => e?._id == channelid)
@@ -112,17 +113,56 @@ export default function Call({}) {
     requester(true, '/api/channel/callleft', 'POST', true, { channelid });
     setMeeting(null);
   }
-
-  if (!meeting && channel.meetingParticipants?.length > 0 ) {
+  channel.meetingParticipants = [{
+    "_id": "67362c690eb0c2f23d92a789",
+    "username": "test",
+    "password": "$2b$10$SkEnbVZoTe.Fk5QNf2kCCeyKSqPvcNJ2IhViV7zlyjX854dQHz3Uy",
+    "long_session_identifier": "",
+    "role": "Basic",
+    "lastActive": "2024-11-14T16:59:21.940Z",
+    "createdAt": "2024-11-14T16:59:21.941Z",
+    "updatedAt": "2025-01-24T21:23:04.741Z",
+    "__v": 0,
+    "activityStatus": {
+      "statusType": 1,
+      "date": "2025-01-24T21:23:04.741Z"
+    },
+    "bio": "",
+    "displayName": "Test"
+  }, {
+    "_id": "67362c690eb0c2f23d92a789",
+    "username": "test",
+    "password": "$2b$10$SkEnbVZoTe.Fk5QNf2kCCeyKSqPvcNJ2IhViV7zlyjX854dQHz3Uy",
+    "long_session_identifier": "",
+    "role": "Basic",
+    "lastActive": "2024-11-14T16:59:21.940Z",
+    "createdAt": "2024-11-14T16:59:21.941Z",
+    "updatedAt": "2025-01-24T21:23:04.741Z",
+    "__v": 0,
+    "activityStatus": {
+      "statusType": 1,
+      "date": "2025-01-24T21:23:04.741Z"
+    },
+    "bio": "",
+    "displayName": "Test"
+  }]
+  if (!meeting && channel.meetingParticipants?.length > 0) {
     return (
       <div className='call'>
-        {channel.meetingParticipants.map(p => (<CallParticipantPreview key={p._id} user={p} />))}
-        <button onClick={() => { joinCall(); console.log('click') }}>Join</button>
+        <div className='participants'>
+          {channel.meetingParticipants.map(p => (<CallParticipantPreview key={p._id} user={p} />))}
+        </div>
+        <div className='action-bar center'>
+        <button className='action-button join' onClick={() => { joinCall(); console.log('click') }}><span className="icon material-symbols-outlined">
+          mic
+        </span>Join</button>
+        </div>
+       
       </div>
     );
   } else if (!meeting) {
     return (
-      <div className='call'>
+      <div className=''>
         <button onClick={() => { joinCall(); console.log('click') }}>Start Call</button>
       </div>
     )
@@ -134,18 +174,22 @@ export default function Call({}) {
       <button onClick={async () => { leaveCall(); }}>Leave</button>
       <button onClick={() => { meeting.startAudio(); }}></button>
       <button onClick={() => { meeting.stopAudio(); }}></button>
-      <div>
+      <div className='participants'>
         {participants.map(p => (<CallParticipant key={p._id} participant={p} />))}
       </div>
 
     </div>
   );
 }
-function CallParticipantPreview({ user}) {
+function CallParticipantPreview({ user }) {
   console.log(user)
   return (
     <div className='participant'>
-      <div>
+      <div className='pfp'>
+        <ProfilePicture entity={user}></ProfilePicture>
+      </div>
+
+      <div hidden>
         {user.username}
       </div>
       <video autoPlay playsInline muted></video>

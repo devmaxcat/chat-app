@@ -20,7 +20,7 @@ function ProfilePicture({ entity, className, editing, fallbackLetterSize }) {
         if (!entity.icon && !entity.username) {
             source = '/default-group-pfp.webp'
         } else if (!entity.icon) {
-            source = generateAvatar(name)
+            source = generateAvatar(name, undefined, undefined, true)
         }
         return (
             <img className={className} src={source || editing}></img>
