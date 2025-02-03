@@ -98,9 +98,9 @@ export default function Chat() {
             alert = { id: alert }
         }
         //alert.dismissed = true
-        console.log(alerts, alert, alert.id)
+       
         setAlerts(alerts.filter((e) => {
-            console.log(e.id, alert.id, e.id != alert.id);
+         
             return e.id != alert.id
         }))
         //setAlerts(alerts)
@@ -114,25 +114,25 @@ export default function Chat() {
             transports: ['websocket']
 
         });
-        console.log(socket)
+      
 
         const client = socket
 
         if (client) {
             let disconnectedAlert;
             function onConnect() {
-                console.log('Connected');
+              
                 if (disconnectedAlert) dismiss(disconnectedAlert)
                 setClient(socket)
             }
             function onDisconnect(reason) {
                 //setActivityStatus(0)
-                console.log('Disconnected from the server: ' + reason); // reload application
+               
                 disconnectedAlert = alert(new Alert('error', 'Lost connection to the server. Things may not work as expected', 'DISCONNECTED', 0, [new AlertAction('primary', () => window.location.reload(), 'Reload')], 3, 100, 'fa-solid fa-plug-circle-exclamation'))
 
             }
             function onServerException(error) {
-                console.log(error)
+             
                 if (error.redirect) {
                     navigate(error.redirect)
                 }
@@ -194,7 +194,7 @@ export default function Chat() {
             if (!data.error) {
                 data.refresh = () => { refreshFriends(); refreshChannels() }
                 data.send = async function (to, useid) {
-                    console.log(to)
+                  
                     let data = await requester(true, '/api/friend/create', 'POST', true, { to: to, useid })
                     if (!data.error) {
 
@@ -224,6 +224,14 @@ export default function Chat() {
                         return {}
                     } else {
                         return data
+                    }
+                }
+                data.getKnownUserById = function (id) {
+                    let result = data.find((e) => e.to?._id == id || e.from?._id == id)
+                    if (result) {
+                        return result.to?._id == id ? result.to : result.from
+                    } else {
+                        return null
                     }
                 }
                 data.isFriends = function (otherid) {
@@ -299,7 +307,7 @@ export default function Chat() {
 
                                 </div>
                                 <div id='chat'>
-                                  
+
 
                                     <Sidebar></Sidebar>
                                     <Pane></Pane>
@@ -325,7 +333,7 @@ function NotificationHandler() {
             if (data.author._id != user._id) {
                 if (document.hidden) {
                     let notifmsc = channels.find(e => e._id == data.channel_id)
-                   
+
                     if (notif) notif.close();
                     notif = new Notification(notifmsc.type == 0 ? data.author.username : data.author.username + ' | ' + notifmsc.name, { body: data.text_content, requireInteraction: false, icon: getAvatarFromUser(data.author) })
 

@@ -31,7 +31,7 @@ function ChannelName({ channel }) {
 
     return (
         <div className='channel-top-name' >
-            <img src={channel.icon}></img>
+            <ProfilePicture entity={channel.entity}></ProfilePicture>
             <span key={channel._id}>
                 <div className='input-wrapper disabled-plaintext' onClick={() => { if (channel.type != 0) setEditing(true) }}>
                     {isEditable ?
@@ -169,21 +169,22 @@ export default function Channel() {
 
     
     let channelName;
-    let channelIconURL;
+    let channelIconEntity;
     let DMUser;
     if (channelData?.type == 0) {
         DMUser = channelData.recipients.find((e) => e._id != userData._id)
         channelName = DMUser?.displayName || DMUser?.username
         channelData.name = channelName
-        channelIconURL = DMUser?.icon || '/default-user-pfp.webp'
-        channelData.icon = channelIconURL
+        channelIconEntity = DMUser
+      
     } else if (channelData) {
         channelName = channelData?.name
-        channelIconURL = channelData?.icon || '/default-group-pfp.webp'
-        channelData.icon = channelIconURL
+       channelIconEntity = channelData
+      
     } else {
         return
     }
+    channelData.entity = channelIconEntity
    
     return (
 
@@ -238,7 +239,7 @@ export default function Channel() {
                         {history.length == 0 ? (<div className='no-message-history'>
                             <div className='title'>
                                
-                                <img src={channelIconURL}></img>
+                                <ProfilePicture entity={channelData.entity}></ProfilePicture>
                                 <div>{channelName}</div>
                             </div>
 
@@ -542,7 +543,7 @@ function MessageBar({ channelid, pushTempHistory }) {
     return (
         <div className={`input-wrapper message-bar ${isDragging ? 'file-drop' : ''}`} onDrop={(ev) => {
             ev.preventDefault()
-            console.log('drag', ev)
+         
 
 
             if (ev.dataTransfer.items) {

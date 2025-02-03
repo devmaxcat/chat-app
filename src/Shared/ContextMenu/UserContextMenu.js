@@ -50,7 +50,7 @@ export default function UserContextMenu({ user, context }) {
       callback: async function () {
 
         let channel = channels.find((e) => (e.recipients.map(item => item._id).includes(userData._id) && e.recipients.map(item => item._id).includes(user._id) && e.type == 0))
-        console.log(channels)
+      
         if (!channel) {
           let newChannels = await channels.refresh('ahhh')
           channel = newChannels.find((e) => (e.recipients.map(item => item._id).includes(userData._id) && e.recipients.map(item => item._id).includes(user._id) && e.type == 0))

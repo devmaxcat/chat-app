@@ -5,7 +5,7 @@ function useUserSelection() {
    
     useEffect(() => {
         document.addEventListener("selectionchange", () => {
-            console.log('event recieved')
+           
             setSelection(document.getSelection())
           });
     }, [])

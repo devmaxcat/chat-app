@@ -43,7 +43,7 @@ export default function Channels() {
 
 
     let filteredChannels = sortedChannels.filter(filters[filter])
-    console.log('WHY ERROR', channels)
+   
     return (
         <>
             <div className='filter-tabs'>

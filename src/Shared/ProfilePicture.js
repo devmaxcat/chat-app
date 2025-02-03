@@ -1,8 +1,8 @@
-import React from 'react'
-import generateAvatar from 'profile-generator-js' // hey ! I wrote this package!
+import React, { useState } from 'react'
+import generateAvatar, { AvatarOptions } from 'profile-generator-js' // hey ! I wrote this package!
 
 
-export function getAvatarFromUser(user = {username: ''}) {
+export function getAvatarFromUser(user = { username: '' }) {
     if (!user.icon) {
         return generateAvatar(user.username)
     } else {
@@ -11,20 +11,30 @@ export function getAvatarFromUser(user = {username: ''}) {
 }
 
 function ProfilePicture({ entity, className, editing, fallbackLetterSize }) {
+    let [sourceFinal, setSourceFinal] = useState('')
 
-
+    console.log(entity)
     const name = entity.username || entity.name;
-    
+
     let source = entity.icon;
 
+    if (sourceFinal) {
+        source = sourceFinal
+    } else {
         if (!entity.icon && !entity.username) {
-            source = '/default-group-pfp.webp'
+            //source = generateAvatar(entity.name, '', undefined, true)
+            source = null;
+            generateAvatar(name, '', {size: 500, customIcon:'/user-groups.svg'}).then((res) => {
+                setSourceFinal(res)
+            })
         } else if (!entity.icon) {
             source = generateAvatar(name, undefined, undefined, true)
         }
-        return (
-            <img className={className} src={source || editing}></img>
-        )
+       
+    }
+    return (
+        <img data-entity={entity.icon} className={className} src={source || editing}></img>
+    )
     // } else {
     //     return (
     //         <div className='fallback-picture pfp'>

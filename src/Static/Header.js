@@ -5,7 +5,7 @@ import ProfilePicture from '../Shared/ProfilePicture'
 
 function Header() {
     const userData = useContext(UserContext)
-    console.log(userData)
+ 
     return (
 
         <div id='header'>

@@ -17,7 +17,7 @@ export default function ContextMenuButton({ children, menu, className }) {
         let selection = window.getSelection()
         let text = selection.toString()
         if (selection.type == 'Range') {
-            console.log(menu)
+          
             let copyTextItem = new CreateContextItem('Copy', () => {
                 navigator.clipboard.writeText(text)
             })
@@ -63,7 +63,7 @@ function ContextItem({ item }) {
     }
 
     return (
-        <div className='context-item' onClick={(e) => { e.stopPropagation(); console.log('meow1'); item.callback() }}>
+        <div className='context-item' onClick={(e) => { e.stopPropagation(); item.callback() }}>
             {item.label}
         </div>
     )
