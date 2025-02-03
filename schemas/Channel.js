@@ -31,7 +31,13 @@ const ChannelSchema = new Mongoose.Schema({
         default: [{
            
         }]
-
+    },
+    meetingParticipants: {
+        type: Array,
+        default: [{
+            type: ObjectId,
+            ref: 'user'
+        }]
     }
 }, { timestamps: true })
 

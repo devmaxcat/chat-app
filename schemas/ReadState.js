@@ -3,7 +3,7 @@ const { ObjectId } = require("mongodb")
 
 const ChannelSchema = new Mongoose.Schema({
     channel_id: {
-        type: ObjectId,
+        type: ObjectId, 
         required: true,
     },
     user: {

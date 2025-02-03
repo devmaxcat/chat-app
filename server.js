@@ -111,7 +111,8 @@ io.use((socket, next) => {
   next()
 })
 
-const gateway = require('./gateway')
+const gateway = require('./gateway');
+const { trace } = require('console');
 io.on('connection', (socket) => {
   gateway(socket, io)
 })
@@ -144,11 +145,11 @@ app.use("/api/channel", require("./api/channel/route"))
 const PORT = process.env.PORT
 
 server.listen(PORT, () => {
-  console.log('listening on ${PORT}');
+  console.log(`listening on ${PORT}`);
 });
 
 process.on("unhandledRejection", err => {
-  console.log(`An error occurred: ${err.message}`)
+  trace(err)
   server.close(() => process.exit(1))
 })
 
