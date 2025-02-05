@@ -144,10 +144,8 @@ exports.leave = async function (req, res, next) {
 exports.webhook = {}
 exports.webhook.callJoined = async function (req, res, next) {
   try {
-    const { roomName, externalUserId, meta } = req.body
-    console.log(req.body)
-    //const user = JSON.parse(meta)
-    console.log(user)
+    const { roomName, externalUserId, meta } = req.body.data
+    console.log(roomName, externalUserId, meta)
     const channel = await Channel.findOne({ _id: room })
     channel.meetingParticipants.push(new ObjectId(externalUserId))
     await channel.save()
@@ -161,11 +159,8 @@ exports.webhook.callJoined = async function (req, res, next) {
 
 exports.webhook.callLeft = async function (req, res, next) {
   try {
-    const { roomName, externalUserId, meta } = req.body
-    console.log(req.body)
-
-    //const user = JSON.parse(meta)
-    console.log(user)
+    const { roomName, externalUserId, meta } = req.body.data
+    console.log(roomName, externalUserId, meta)
     const channel = await Channel.findOne({ _id: room })
     channel.meetingParticipants = channel.meetingParticipants.filter((e) => e != externalUserId)
     await channel.save()
