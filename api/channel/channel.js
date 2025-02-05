@@ -145,8 +145,8 @@ exports.webhook = {}
 exports.webhook.callJoined = async function (req, res, next) {
   try {
     const { roomName, externalUserId, meta } = req.body
-    console.log(roomName, externalUserId, meta)
-    const user = JSON.parse(meta)
+    console.log(req.body)
+    //const user = JSON.parse(meta)
     console.log(user)
     const channel = await Channel.findOne({ _id: room })
     channel.meetingParticipants.push(new ObjectId(externalUserId))
@@ -162,8 +162,9 @@ exports.webhook.callJoined = async function (req, res, next) {
 exports.webhook.callLeft = async function (req, res, next) {
   try {
     const { roomName, externalUserId, meta } = req.body
-    console.log(roomName, externalUserId, meta)
-    const user = JSON.parse(meta)
+    console.log(req.body)
+
+    //const user = JSON.parse(meta)
     console.log(user)
     const channel = await Channel.findOne({ _id: room })
     channel.meetingParticipants = channel.meetingParticipants.filter((e) => e != externalUserId)
