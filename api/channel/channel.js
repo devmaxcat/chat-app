@@ -151,6 +151,7 @@ exports.webhook.callJoined = async function (req, res, next) {
     const channel = await Channel.findOne({ _id: room })
     channel.meetingParticipants.push(new ObjectId(externalUserId))
     await channel.save()
+    io.to(channel._id.toString()).emit('ChannelUpdate')
     res.status(200).json({ message: 'User joined call', channel })
   }
   catch (err) {
@@ -158,21 +159,22 @@ exports.webhook.callJoined = async function (req, res, next) {
   }
 }
 
-// exports.webhook.callLeft = async function (req, res, next) {
-//   try {
-//     const { roomName, externalUserId, meta } = req.body
-//     console.log(roomName, externalUserId, meta)
-//     const user = JSON.parse(meta)
-//     console.log(user)
-//     const channel = await Channel.findOne({ _id: room })
-//     channel.meetingParticipants = channel.meetingParticipants.filter((e) => e != externalUserId)
-//     await channel.save()
-//     res.status(200).json({ message: 'User left call', channel })
-//   }
-//   catch (err) {
-//     res.status(500).json({ error: 'Internal Server Error', message: 'Something went wrong. ' + err })
-//   }
-// }
+exports.webhook.callLeft = async function (req, res, next) {
+  try {
+    const { roomName, externalUserId, meta } = req.body
+    console.log(roomName, externalUserId, meta)
+    const user = JSON.parse(meta)
+    console.log(user)
+    const channel = await Channel.findOne({ _id: room })
+    channel.meetingParticipants = channel.meetingParticipants.filter((e) => e != externalUserId)
+    await channel.save()
+    io.to(channel._id.toString()).emit('ChannelUpdate')
+    res.status(200).json({ message: 'User left call', channel })
+  }
+  catch (err) {
+    res.status(500).json({ error: 'Internal Server Error', message: 'Something went wrong. ' + err })
+  }
+}
 
 exports.callJoined = async function (req, res, next) {
   try {
@@ -247,11 +249,10 @@ exports.call = async function (req, res, next) { // returns a token to create or
                 "joinAudioOn": true,
                 "recordRoom": false,
                 //"ejectAfterElapsedTimeInSec": 0,
-                //"meetingJoinWebhook": "string",
+                "meetingJoinWebhook": "https://devmaxcat.net/api/channels/webhook/callJoin",
+                "meetingLeftWebhook": "https://devmaxcat.net/api/channels/webhook/callLeft",
                 //"endMeetingAfterNoActivityInSec": 300,
                 "audioOnlyRoom": false,
-                // "meetingJoinWebhook": ``,
-                // "meetingLeftWebhook": ``,
               })
             })
             let body = await response.json()

@@ -113,6 +113,7 @@ io.use((socket, next) => {
 
 const gateway = require('./gateway');
 const { trace } = require('console');
+const Channel = require('./schemas/Channel');
 io.on('connection', (socket) => {
   gateway(socket, io)
 })
@@ -145,10 +146,20 @@ app.use("/api/channel", require("./api/channel/route"))
 const PORT = process.env.PORT
 
 server.listen(PORT, () => {
+
+
+
+  Channel.updateMany({meetingParticipants: {$exists: true, $ne: []}}, { meetingParticipants: [] }).then((res) => {
+    console.log(res)
+  }).catch((err) => {
+    console.log(err)
+  })
+ 
   console.log(`listening on ${PORT}`);
 });
 
 process.on("unhandledRejection", err => {
+ 
   trace(err)
   server.close(() => process.exit(1))
 })

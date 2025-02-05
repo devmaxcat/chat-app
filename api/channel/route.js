@@ -9,7 +9,9 @@ router.route("/leave").post(authenticate, leave)
 router.route("/add").post(authenticate, add)
 router.route("/remove").post(authenticate, add)
 router.route("/call").post(authenticate, call)
-router.route("/calljoined").post(callJoined)
-router.route("/callleft").post(callLeft)
+router.route("/webhook/callJoined").post(webhook.callJoined)
+router.route("/webhook/callLeft").post(webhook.callLeft)
+// router.route("/calljoined").post(callJoined)
+// router.route("/callleft").post(callLeft)
 
 module.exports = router     
