@@ -249,7 +249,7 @@ exports.call = async function (req, res, next) { // returns a token to create or
                 "joinAudioOn": true,
                 "recordRoom": false,
                 //"ejectAfterElapsedTimeInSec": 0,
-                "meetingJoinWebhook": "https://api.devmaxcat.net/api/channel/webhook/callJoin",
+                "meetingJoinWebhook": "https://api.devmaxcat.net/api/channel/webhook/callJoined",
                 "meetingLeftWebhook": "https://api.devmaxcat.net/api/channel/webhook/callLeft",
                 //"endMeetingAfterNoActivityInSec": 300,
                 "audioOnlyRoom": false,
