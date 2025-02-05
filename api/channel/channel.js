@@ -146,7 +146,7 @@ exports.webhook.callJoined = async function (req, res, next) {
   try {
     const { roomName, externalUserId, meta } = req.body.data
     console.log(roomName, externalUserId, meta)
-    const channel = await Channel.findOne({ _id: room })
+    const channel = await Channel.findOne({ _id: roomName })
     channel.meetingParticipants.push(new ObjectId(externalUserId))
     await channel.save()
     io.to(channel._id.toString()).emit('ChannelUpdate')
@@ -161,7 +161,7 @@ exports.webhook.callLeft = async function (req, res, next) {
   try {
     const { roomName, externalUserId, meta } = req.body.data
     console.log(roomName, externalUserId, meta)
-    const channel = await Channel.findOne({ _id: room })
+    const channel = await Channel.findOne({ _id: roomName })
     channel.meetingParticipants = channel.meetingParticipants.filter((e) => e != externalUserId)
     await channel.save()
     io.to(channel._id.toString()).emit('ChannelUpdate')
