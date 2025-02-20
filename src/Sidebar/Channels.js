@@ -43,7 +43,7 @@ export default function Channels() {
 
 
     let filteredChannels = sortedChannels.filter(filters[filter])
-   
+
     return (
         <>
             <div className='filter-tabs'>
@@ -65,9 +65,11 @@ export default function Channels() {
 
 function ChannelItem({ data }) {
     let userData = useContext(UserContext)
+    let friends = useContext(FriendsContext)
+
     let channelName;
     let channelIconURL;
-    let extraclass ='';
+    let extraclass = '';
     const {
         handleClick,
         context,
@@ -107,13 +109,27 @@ function ChannelItem({ data }) {
 
                     <ActivityIcon user={DMUser} />
                 </div></div>
-            <div className='input-wrapper disabled-plaintext'>
-                <input className='title' defaultValue={channelName} disabled>
-                </input>
-                {data.unread}
+            <div>
+                <div className='input-wrapper disabled-plaintext'>
+                    <input className='title' defaultValue={channelName} disabled>
+                    </input>
+
+                    {/* {data.unread} */}
+                </div>
+                <div className='last-message'>
+                    {friends.getKnownUserById(data.lastMessage?.author)?.username || data.lastMessage?.author?.username}: {data.lastMessage?.text_content}
+                </div>
             </div>
+
+
             <div className='top-right-actions' >
-                <button className='action-circle fa-solid fa-ellipsis' onClick={handleClick()}></button>
+                <button className='action-circle fa-solid fa-ellipsis' onClick={(e) => {
+                    e.stopPropagation()
+                    e.preventDefault()
+                    let rect = e.currentTarget.getBoundingClientRect()
+                    open(rect.right - 5, rect.bottom - 5, e.currentTarget)
+                    return
+                }}></button>
 
 
 

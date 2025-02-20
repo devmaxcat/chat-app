@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 import ReactDOM from 'react-dom'
 import useUserSelection from '../../Hooks/useUserSelection'
 
@@ -10,7 +10,8 @@ document.oncontextmenu = function (e) {
 
 export default function GenericContextMenu({ buttons, title, context }) {
   const selection = useUserSelection()
-
+  const ref = useRef()
+  const [safePosition, setSafePosition] = useState({ x: 0, y: 0 })
 
   let selectionText = selection.toString()
 
@@ -42,6 +43,29 @@ export default function GenericContextMenu({ buttons, title, context }) {
     
   }, [context])
 
+  useEffect(() => {
+    if (context.open == false) {
+      return
+    }
+
+    let x = context.position.x
+    let y = context.position.y
+
+    let rect = ref.current.getBoundingClientRect()
+
+    if (x + rect.width > window.innerWidth) {
+      x = window.innerWidth - rect.width
+    }
+
+    if (y + rect.height > window.innerHeight) {
+      y = window.innerHeight - rect.height
+    }
+    ref.current.style.left = x + 'px'
+    ref.current.style.top = y + 'px'
+    setSafePosition({ x, y })
+
+  }, [context])
+
 
 
 
@@ -50,14 +74,18 @@ export default function GenericContextMenu({ buttons, title, context }) {
   // copyTextItem.decay = true
   // menu.items.push(copyTextItem)
 
+  let safeX
 
 
+console.log('context', context)
   if (context.open == false) {
     return (<></>)
   }
+  console.log('opened ')
+
 
   return ReactDOM.createPortal(
-    <div className='context-menu' style={{ left: context.position.x + 3, top: context.position.y + 3 }}>
+    <div ref={ref} className='context-menu'>
       <div className='title'>
         {title}
       </div>
@@ -80,7 +108,7 @@ function ContextItem({ item }) {
   }
 
   return (
-    <div className='context-item'  onMouseUp={(e) => { item.callback() }}> 
+    <div className='context-item'   onMouseUp={(e) => { item.callback() }}> 
       <div className='context-label-container'>
         {item.label}
         <div className='context-keybind'>

@@ -5,8 +5,11 @@ import { RequestContext, UserContext } from '../App'
 import MessageSkeletonBuffer from '../MessageSkeletonBuffer'
 import ActivityIcon from '../Profile/ActivityIcon'
 import UserContextMenu from '../Shared/ContextMenu/UserContextMenu'
+import MessageContextMenu from '../Shared/ContextMenu/MessageContextMenu'
+import MediaContextMenu from '../Shared/ContextMenu/MediaContextMenu'
 import useContextMenu from '../Shared/ContextMenu/useContextMenu'
 import GenericSelectionMenu from '../Shared/SelectionMenu/GenericSelectionMenu'
+
 import useSelectionMenu from '../Shared/SelectionMenu/useSelectionMenu'
 import User from '../ProfileDrop'
 import { Remarkable } from 'remarkable';
@@ -127,47 +130,57 @@ export default function Channel() {
 
     useEffect(() => { historyReference.current = history }, [history])
     useEffect(() => {
-      
+
         function onMessageRecieived(data) {
             // console.log('MessageRecieved', data)
-          
+
             if (data.channel_id === channelid) {
+                if (!document.hasFocus()) {
+                    data.unviewed = true
+                }
                 setHistory([data, ...historyReference.current.filter(e => !e.temporary)])
             }
         }
-        
-
-
-
-
-        fetch(`${process.env.REACT_APP_API_URI}/api/message/history?` + new URLSearchParams({ channelid: channelid }), {
-            method: 'GET',
-            credentials: 'include'
-        })
-            .then((response) => response.json())
-            .then((data) => {
-                if (!data.error) {
-                    setHistory(data)
-                    requester(true, `/api/channel/${data[0]?._id}/read`, 'POST', true)
-                } else {
-                    alerts.alert(new Alert('error', data.message, data.error, 0, [], 0, 0, "fa-solid fa-ban"))
-                    if (data.error == 'Unauthorized') {
-                        navigate('/login')
-                    }
+        document.addEventListener('focusin', function () {
+            let newHistory = [...historyReference.current]
+            newHistory.forEach((e) => {
+                if (e.unviewed) {
+                    e.unviewed = false
                 }
-
             })
+            //setHistory(newHistory)
+        }
+        )
+
+
+
+
+
+        let gettingHistory = true;
+        let msgs = channels.getMessages(channelid).then((data) => {
+
+            if (data) {
+                setHistory(data)
+            } else {
+                console.log('no msgs')
+            }
+        })
+
+
+
         client.on('MessageRecieved', onMessageRecieived)
         return () => {
             client.off('MessageRecieved', onMessageRecieived)
+            document.removeEventListener('focusin', () => { })
         }
     }, [client, location, channelid])
+    console.log(history, channels)
     useEffect(() => {
-       
+
         setHistory(['LOADING'])
     }, [channelid])
 
-    
+
     let channelName;
     let channelIconEntity;
     let DMUser;
@@ -176,16 +189,16 @@ export default function Channel() {
         channelName = DMUser?.displayName || DMUser?.username
         channelData.name = channelName
         channelIconEntity = DMUser
-      
+
     } else if (channelData) {
         channelName = channelData?.name
-       channelIconEntity = channelData
-      
+        channelIconEntity = channelData
+
     } else {
         return
     }
     channelData.entity = channelIconEntity
-   
+
     return (
 
         <>
@@ -238,7 +251,7 @@ export default function Channel() {
                         })}
                         {history.length == 0 ? (<div className='no-message-history'>
                             <div className='title'>
-                               
+
                                 <ProfilePicture entity={channelData.entity}></ProfilePicture>
                                 <div>{channelName}</div>
                             </div>
@@ -297,6 +310,12 @@ var md = new Remarkable({
 let lastRenderedMessage = null
 function Message({ data, previous, index, history }) {
     const requester = useContext(RequestContext)
+    const {
+        handleClick,
+        context,
+        open,
+    } = useContextMenu()
+    const userContextMenu = useContextMenu()
 
     const [embeds, setEmbeds] = useState(function () {
         let embedded = []
@@ -351,7 +370,7 @@ function Message({ data, previous, index, history }) {
 
     // })
     if (data.text_content.length > 1000) {
-        data.text_content = data.text_content.slice(0,1000) + '...'
+        data.text_content = data.text_content.slice(0, 1000) + '...'
     }
     if (time.isSame(moment(), 'day')) {
 
@@ -369,15 +388,16 @@ function Message({ data, previous, index, history }) {
 
 
         return (
-            <div className={`message collapsed ${data.temporary ? 'temp' : ''}`}>
+            <div onContextMenu={handleClick()} className={`message collapsed ${data.temporary ? 'temp' : ''} ${context.open ? 'selected' : ''} ${data.unviewed ? 'unviewed' : ''}`}>
+                <MessageContextMenu context={context} message={data}></MessageContextMenu>
                 <div className='gutter'></div>
                 <div>
-                <div className='text-content' dangerouslySetInnerHTML={{ __html: md.render(data.text_content) }}></div>
-                <div className='attachments'>
-                    {embeds.map((e) => { return (<MessageEmbed embed={e} />) })}
+                    <div className='text-content' dangerouslySetInnerHTML={{ __html: md.render(data.text_content) }}></div>
+                    <div className='attachments'>
+                        {embeds.map((e) => { return (<MessageEmbed embed={e} />) })}
+                    </div>
                 </div>
-                </div>
-               
+
 
 
             </div>
@@ -386,9 +406,10 @@ function Message({ data, previous, index, history }) {
     } else {
         if (data.temporary) console.log('remptoary rendner', data)
         return (
-            <div className={`message ${data.temporary ? 'temp' : ''}`}>
-                <div className='pfp'>
-                    <ProfilePicture entity={data.author}></ProfilePicture>
+            <div onContextMenu={handleClick()} className={`message ${data.temporary ? 'temp' : ''} ${context.open ? 'selected' : ''} ${data.unviewed ? 'unviewed' : ''}`}>
+                <MessageContextMenu context={context} message={data}></MessageContextMenu>
+                <div className='pfp cursor'>
+                    <ProfilePicture entity={data.author} includeContextMenu={true}></ProfilePicture>
                 </div>
                 <div>
                     <div className='bar'>
@@ -416,9 +437,14 @@ function Message({ data, previous, index, history }) {
 }
 
 function MessageEmbed({ embed, progress }) {
+    let {
+        handleClick,
+        context,
+        open,
+    } = useContextMenu()
     return (
-        <div className='embed'>
-
+        <div className='embed' onContextMenu={handleClick()}>
+            <MediaContextMenu media={embed} context={context}></MediaContextMenu>
             {
                 function () {
                     console.log('EMBED', embed)
@@ -487,9 +513,9 @@ function ChannelMember({ data }) {
         <div className='profile-small w-interact' onContextMenu={handleClick()}>
             <UserContextMenu user={data} context={context} />
             <div className='pfp'>
-                <ProfilePicture entity={data}></ProfilePicture>
-               
-               
+                <ProfilePicture entity={data} includeContextMenu={true}></ProfilePicture>
+
+
                 <ActivityIcon user={data} />
             </div>
 
@@ -543,7 +569,7 @@ function MessageBar({ channelid, pushTempHistory }) {
     return (
         <div className={`input-wrapper message-bar ${isDragging ? 'file-drop' : ''}`} onDrop={(ev) => {
             ev.preventDefault()
-         
+
 
 
             if (ev.dataTransfer.items) {

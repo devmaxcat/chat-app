@@ -188,11 +188,11 @@ export default function Call({ }) {
       roomURL: `devmaxcatchatapp.metered.live/${channelid}`,
       accessToken: response.token,
     });
-    requester(true, '/api/channel/calljoined', 'POST', true, { channelid });
+    //requester(true, '/api/channel/calljoined', 'POST', true, { channelid });
 
     setMeeting(prevMeeting => {
       prevMeeting?.leaveMeeting();
-      requester(true, '/api/channel/callleft', 'POST', true, { channelid });
+      //requester(true, '/api/channel/callleft', 'POST', true, { channelid });
       channels.refresh();
       return meeting;
     }
@@ -299,6 +299,9 @@ function CallParticipant({ participant }) {
   useEffect(() => {
     if (videoRef.current && participant.videoStream) {
       videoRef.current.srcObject = participant.videoStream;
+      videoRef.current.hidden = false;
+    } else {
+      videoRef.current.hidden = true;
     }
     if (participant.name == 'Me') {
       videoRef.current.muted = true

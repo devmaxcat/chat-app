@@ -3,6 +3,7 @@ import React, { useContext } from 'react'
 let activityStatusClass = {
     0: 'offline',
     1: 'online',
+    2: 'away',
     '-1': 'none'
 }
 

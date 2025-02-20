@@ -138,7 +138,7 @@ function Friend({ data }) {
                     <UserContextMenu user={data.to} context={context} />
                     <div className='profile-small'>
                         <div className='pfp'>
-                        <ProfilePicture entity={data.to}></ProfilePicture>
+                        <ProfilePicture entity={data.to} includeContextMenu={true}></ProfilePicture>
 
                         </div>
 
@@ -161,7 +161,7 @@ function Friend({ data }) {
                     <UserContextMenu user={data.from} context={context} />
                     <div className='profile-small'>
                         <div className='pfp'>
-                        <ProfilePicture entity={data.from}></ProfilePicture>
+                        <ProfilePicture entity={data.from} includeContextMenu={true}></ProfilePicture>
 
                         </div>
                         {data.from.username}
@@ -191,7 +191,7 @@ function Friend({ data }) {
                 <div className='profile-small'>
                     <div className='pfp'>
     
-                    <ProfilePicture entity={friendedUser}></ProfilePicture>
+                    <ProfilePicture entity={friendedUser} includeContextMenu={true}></ProfilePicture>
                     </div>
                     {friendedUser.username}
                 </div>

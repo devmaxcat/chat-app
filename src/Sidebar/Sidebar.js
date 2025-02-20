@@ -28,17 +28,18 @@ export default function Sidebar() {
             </Searcher>
             <div className={`sidebar-mover ${searching}`}>
                 <CreateChannel></CreateChannel>
+                <div>
+                   
+                    <Link className={`channel-selector ${location.pathname.includes('friends') ? 'focused' : ''}`} to={"/me/friends"}><i badge={friendRequests.length > 0 ? friendRequests.length : 'NONE'}  class="badge badge-left fa-solid fa-users"></i>Friends</Link>
+                    {/* <Link className={`channel-selector ${location.pathname.includes('forum') ? 'focused' : ''}`} to={"/me/friends"}><i class="fa-solid fa-comments"></i>Forums</Link> */}
+                    {/* <Link className={`channel-selector ${location.pathname.includes('alerts') ? 'focused' : ''}`} to={"/me/alerts"}><i class="fa-regular fa-rectangle-list"></i>Change Log</Link> */}
+                    </div>
                 <h3 className='channels-header'>Conversations </h3>
                 <div className='sidebar-opposites'>
                     <div>
                     <Channels></Channels>
                     </div>
-                    <div>
-                   
-                    <Link className={`channel-selector ${location.pathname.includes('friends') ? 'focused' : ''}`} to={"/me/friends"}><i badge={friendRequests.length > 0 ? friendRequests.length : 'NONE'}  class="badge badge-left fa-solid fa-users"></i>Friends</Link>
-                    {/* <Link className={`channel-selector ${location.pathname.includes('forum') ? 'focused' : ''}`} to={"/me/friends"}><i class="fa-solid fa-comments"></i>Forums</Link> */}
-                    <Link className={`channel-selector ${location.pathname.includes('alerts') ? 'focused' : ''}`} to={"/me/alerts"}><i class="fa-regular fa-rectangle-list"></i>Change Log</Link>
-                    </div>
+                    
                    
 
 

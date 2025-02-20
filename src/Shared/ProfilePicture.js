@@ -1,5 +1,7 @@
 import React, { useState } from 'react'
 import generateAvatar, { AvatarOptions } from 'profile-generator-js' // hey ! I wrote this package!
+import useContextMenu from './ContextMenu/useContextMenu'
+import UserContextMenu from './ContextMenu/UserContextMenu'
 
 
 export function getAvatarFromUser(user = { username: '' }) {
@@ -10,9 +12,14 @@ export function getAvatarFromUser(user = { username: '' }) {
     }
 }
 
-function ProfilePicture({ entity, className, editing, fallbackLetterSize }) {
+function ProfilePicture({ entity, className, editing, fallbackLetterSize, includeContextMenu }) {
+    let {
+        handleClick,
+        context,
+        open
+    } = useContextMenu()
     let [sourceFinal, setSourceFinal] = useState('')
-
+    
     console.log(entity)
     const name = entity.username || entity.name;
 
@@ -24,16 +31,26 @@ function ProfilePicture({ entity, className, editing, fallbackLetterSize }) {
         if (!entity.icon && !entity.username) {
             //source = generateAvatar(entity.name, '', undefined, true)
             source = null;
-            generateAvatar(name, '', {size: 500, customIcon:'/user-groups.svg'}).then((res) => {
+            generateAvatar(name, '', { size: 500, customIcon: '/user-groups.svg' }).then((res) => {
                 setSourceFinal(res)
             })
         } else if (!entity.icon) {
             source = generateAvatar(name, undefined, undefined, true)
         }
-       
+
     }
     return (
-        <img data-entity={entity.icon} className={className} src={source || editing}></img>
+        <>
+            <img onClick={(e) => {
+                let rect = e.currentTarget.getBoundingClientRect()
+                open(rect.right - 5, rect.bottom - 5, e.currentTarget)
+                return
+            }} data-entity={entity.icon} className={className} src={source || editing}></img>
+            {
+                includeContextMenu ? <UserContextMenu user={entity} context={context} /> : <></>
+            }
+        </>
+
     )
     // } else {
     //     return (

@@ -33,8 +33,8 @@ const requester = async function (isApi, resourceUri, method, expectJson, body) 
         }
 
 
-    } catch {
-        response = { error: 'Fetch failed', status: 500 }
+    } catch (e) {
+        response = { error: 'Fetch failed: ' + e, status: 500 }
         console.error('Something went wrong, fetch to: "' + URL + '" Failed.')
     }
     return response
@@ -161,7 +161,7 @@ function Bootstrapper() { // Ensures the client has accurate data from the serve
         return (
             <ModalService.Provider value={{ modals, addModal, dismissModal }}>
                 <UserContext.Provider value={userData}>
-
+                
                     <Outlet></Outlet>
                     <ModalWindow modal={modals[0]} />
                 </UserContext.Provider>
