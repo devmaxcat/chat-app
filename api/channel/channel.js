@@ -19,19 +19,25 @@ exports.get = async (req, res, next) => { // Gets a logged in user's channels th
 
   for (let channel of data) {
     //console.log(channel.lastRead, new ObjectId(sessionData._id))
-
+    let mostCurrentMessage = await Message.findOne({
+      channel_id: channel._id,
+    }).sort({ createdAt: -1 })
     let lastRead = channel.lastRead.find(read => read.user?.equals(new ObjectId(sessionData._id)))
     if (!lastRead) { lastRead = { user: new ObjectId(sessionData._id), timestamp: channel.createdAt } }
     if (lastRead) {
+      // get the last message sent after the last read time
+      
       let messagesSinceLastRead = await Message.countDocuments({
         channel_id: channel._id,
         createdAt: { $gt: lastRead.timestamp }
       })
       channel.unread = messagesSinceLastRead
+      channel.lastMessage = mostCurrentMessage
 
     } else {
-      channel.unread = 0
+      channel.unread = 0 
     }
+   
     console.log(channel.unread)
   }
 
@@ -206,57 +212,24 @@ exports.callLeft = async function (req, res, next) {
 
 
 exports.call = async function (req, res, next) { // returns a token to create or join a call
-    const user = req.session?.user
-    const { channelid } = req.body
-    console.log(channelid)
-    console.log(req.body)
-    const channel = await Channel.findOne({ _id: channelid })
-    fetch(`https://${process.env.METERED_DOMAIN}/api/v1/room/${channelid}?secretKey=${process.env.METERED_SECRET_KEY}`, { // Check if room exists
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-      },
-    })
-      .then((response) => {
-        response.json().then(async (response) => {
-          console.log(response)
-          if (response.message == 'room not found') {
-            console.log("room doesn't exist, creating room")
-            let response = await fetch(`https://${process.env.METERED_DOMAIN}/api/v1/room?secretKey=${process.env.METERED_SECRET_KEY}`, { // Create room if it doesn't exist
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-                'Accept': 'application/json',
-              },
-              body: JSON.stringify({
-
-                "roomName": channelid,
-                "privacy": "private",
-                //"expireUnixSec": 0,
-                "ejectAtRoomExp": true,
-                //"notBeforeUnixSec": 0,
-                "maxParticipants": 0,
-                "autoJoin": true,
-                "enableRequestToJoin": true,
-                "enableChat": false,
-                "enableScreenSharing": true,
-                "joinVideoOn": false,
-                "joinAudioOn": true,
-                "recordRoom": false,
-                //"ejectAfterElapsedTimeInSec": 0,
-                "meetingJoinWebhook": "https://api.devmaxcat.net/api/channel/webhook/callJoined",
-                "meetingLeftWebhook": "https://api.devmaxcat.net/api/channel/webhook/callLeft",
-                //"endMeetingAfterNoActivityInSec": 300,
-                "audioOnlyRoom": false,
-              })
-            })
-            let body = await response.json()
-            console.log(body)
-            console.log(body?.error?.details)
-          }
-          console.log("room exists, creating token")
-          fetch(`https://${process.env.METERED_DOMAIN}/api/v1/token?secretKey=${process.env.METERED_SECRET_KEY}`, {
+  const user = req.session?.user
+  const { channelid } = req.body
+  console.log(channelid)
+  console.log(req.body)
+  const channel = await Channel.findOne({ _id: channelid })
+  fetch(`https://${process.env.METERED_DOMAIN}/api/v1/room/${channelid}?secretKey=${process.env.METERED_SECRET_KEY}`, { // Check if room exists
+    method: 'GET',
+    headers: {
+      'Content-Type': 'application/json',
+      'Accept': 'application/json',
+    },
+  })
+    .then((response) => {
+      response.json().then(async (response) => {
+        console.log(response)
+        if (response.message == 'room not found') {
+          console.log("room doesn't exist, creating room")
+          let response = await fetch(`https://${process.env.METERED_DOMAIN}/api/v1/room?secretKey=${process.env.METERED_SECRET_KEY}`, { // Create room if it doesn't exist
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
@@ -265,29 +238,62 @@ exports.call = async function (req, res, next) { // returns a token to create or
             body: JSON.stringify({
 
               "roomName": channelid,
-              "name": user.displayName,
-              "meta": JSON.stringify(user),
-              "externalUserId": user._id,
+              "privacy": "private",
+              //"expireUnixSec": 0,
+              "ejectAtRoomExp": true,
+              //"notBeforeUnixSec": 0,
+              "maxParticipants": 0,
+              "autoJoin": true,
+              "enableRequestToJoin": true,
+              "enableChat": false,
+              "enableScreenSharing": true,
+              "joinVideoOn": false,
+              "joinAudioOn": true,
+              "recordRoom": false,
+              //"ejectAfterElapsedTimeInSec": 0,
+              "meetingJoinWebhook": "https://api.devmaxcat.net/api/channel/webhook/callJoined",
+              "meetingLeftWebhook": "https://api.devmaxcat.net/api/channel/webhook/callLeft",
+              //"endMeetingAfterNoActivityInSec": 300,
+              "audioOnlyRoom": false,
             })
           })
-            .then((response) => {
-              response.json().then((response) => {
-                console.log(response)
-                res.status(200).json({ message: 'Call started', token: response.token, response })
-              })
+          let body = await response.json()
+          console.log(body)
+          console.log(body?.error?.details)
+        }
+        console.log("room exists, creating token")
+        fetch(`https://${process.env.METERED_DOMAIN}/api/v1/token?secretKey=${process.env.METERED_SECRET_KEY}`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+          },
+          body: JSON.stringify({
 
-            })
-            .catch((err) => {
-              res.status(500).json({ error: 'Internal Server Error', message: 'Something went wrong. ' + err })
-            })
+            "roomName": channelid,
+            "name": user.displayName,
+            "meta": JSON.stringify(user),
+            "externalUserId": user._id,
+          })
         })
+          .then((response) => {
+            response.json().then((response) => {
+              console.log(response)
+              res.status(200).json({ message: 'Call started', token: response.token, response })
+            })
+
+          })
+          .catch((err) => {
+            res.status(500).json({ error: 'Internal Server Error', message: 'Something went wrong. ' + err })
+          })
       })
+    })
 
 
 
 
 
-  }
+}
 
 
 

@@ -36,7 +36,7 @@ const UserSchema = new Mongoose.Schema({
     },
     activityStatus: {
         type: Object,
-        default: {}, // 0: Offline, 1: Online, -1: N/A To this user
+        default: {}, // 0: Offline, 1: Online, -1: N/A To this user, 2: afk
     },
     flags: {
 

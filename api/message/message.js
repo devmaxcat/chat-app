@@ -67,7 +67,7 @@ exports.history = async (req, res, next) => {
   
 }
 
-exports.create = async (req, res, next) => {
+exports.create = async (req, res) => {
   let user = req.session?.user
 
   const { channel_id, text_content } = req.body
@@ -86,6 +86,7 @@ exports.create = async (req, res, next) => {
         resource_type: 'auto',
         use_filename: true,
         folder: 'uploads',
+        phash: true,
         unique_filename: false,
         context: `original_name=${filename}`
       });

@@ -55,7 +55,7 @@ exports.status = async (req, res, next) => {
   const { statusType } = req.body
 
 // if the user sets their status to offline, we shouldn't reveal information about when they might've been active since then.
-  let effectiveDate = statusType == 0 ? (user.activityStatus?.date) : new Date().toISOString()
+  let effectiveDate = (statusType == 0 || statusType == -1) ? (user.activityStatus?.date) : new Date().toISOString()
 
   user.activityStatus = {statusType, date: effectiveDate}
   await user.save()
