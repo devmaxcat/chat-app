@@ -7,6 +7,7 @@ import Channel from './Pages/Channel';
 import Settings from './Pages/Settings';
 import Auth from './Auth/Auth';
 import Home from './Static/Pages/Home';
+import Animation from './Static/Pages/Animation';
 
 const requester = async function (isApi, resourceUri, method, expectJson, body) {
 
@@ -94,6 +95,7 @@ export default function App() {
             <Routes>
                 <Route path='/' element={<Bootstrapper />}>
                     <Route path='/' element={<Home />} />
+                    <Route path='animation' element={<Animation />} />
                     <Route path='login' element={<Auth />} />
                     <Route path='register' element={<Auth />} />
                     <Route path="/me" element={<Chat />}>

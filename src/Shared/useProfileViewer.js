@@ -10,13 +10,25 @@ export default function useContextMenu() {
     })
 
     useEffect(() => {
-        document.addEventListener("mouseup", (() => {
-            setContext({
-                ...context,
-                open: false
-            })
-        }))
-    }, [])
+        if (context.open)  {
+            document.addEventListener("mouseup", (() => {
+                console.log('FUCK')
+                setContext({
+                    ...context,
+                    open: false
+                })
+            }))
+        }
+        
+        return () => {
+            document.removeEventListener("mouseup", (() => {
+                setContext({
+                    ...context,
+                    open: false
+                })
+            }))
+        }
+    }, [context])
 
     const open = (x, y, e) => {
         setContext({
@@ -24,14 +36,15 @@ export default function useContextMenu() {
             open: true,
             target: e.currentTarget,
             position: {
-               x: (x + 5), y: (y + 2)
+                x: (x + 5), y: (y + 2)
             }
         })
     }
 
     const handleClick = () => {
         return (e) => {
-            
+            console.log('ct click')
+            e.stopPropagation()
             open(e.clientX, e.clientY, e)
         }
     }
@@ -40,9 +53,8 @@ export default function useContextMenu() {
         handleClick,
         context,
         open,
-        
+
     }
 }
 
 
-    

@@ -5,6 +5,7 @@ import { ChannelsContext, FriendsContext } from './Chat';
 import ProfilePicture from './Shared/ProfilePicture';
 import { stringToColor } from 'profile-generator-js';
 import { set } from 'react-hook-form';
+import interact from 'interactjs';
 const Metered = window.Metered;
 
 const $ = function (selector) {
@@ -20,8 +21,9 @@ export default function Call({ }) {
   const [participants, setParticipants] = useState([]);
   const [isMuted, setIsMuted] = useState(false);
   const [isScreenSharing, setIsScreenSharing] = useState(false);
+  const [state, setState] = useState(null);
   const requester = useContext(RequestContext);
-
+  console.log('state', state, meeting?.state);
 
 
   class Participant {
@@ -77,6 +79,7 @@ export default function Call({ }) {
         return p;
       }));
     });
+    meeting.on("stateChanged", (meetingState) => {setState(meetingState)});
 
     meeting.on("localTrackStarted", function (item) {
       if (item.type === "video") {
@@ -213,60 +216,46 @@ export default function Call({ }) {
   }
 
 
+  const actions = {
+    joinCall,
+    leaveCall,
+    setMeeting,
+    setParticipants,
+    setIsMuted,
+    setIsScreenSharing,
 
-  if ('devmaxcatchatapp.metered.live/' + channelid == meeting?.roomUrl) {
+  }
+  const info = {
+    meeting,
+    participants,
+    isMuted,
+    isScreenSharing,
+    state,
+  }
+
+
+
+  if ('devmaxcatchatapp.metered.live/' + channelid == meeting?.roomUrl) { // the current call is in this channel
     return (
       <div className='call'>
         <div className='participants'>
           {participants.map(p => (<CallParticipant key={p._id} participant={p} />))}
         </div>
         <div className='action-bar center'>
-          <button className={`action-button secondary ${isScreenSharing ? 'active' : ''}`} onClick={async () => { await meeting.startScreenShare(); setIsScreenSharing(true) }}> <span className='icon material-symbols-outlined'>screen_share</span></button>
-
-          <button className={`action-button secondary ${isMuted ? 'active' : ''}`} onClick={() => { setIsMuted(!isMuted) }}> <span className='icon material-symbols-outlined'>{isMuted ? 'mic_off' : 'mic'}</span> </button>
-          <button className='action-button secondary leave' onClick={async () => { leaveCall(); }}><span className='icon material-symbols-outlined'>call_end</span></button>
+          <CallActions actions={actions} info={info} />
         </div>
 
 
 
       </div>
     );
-  } else {
-    let leadParticipant = participants.filter(e => e.isSpeaking == true)[0] || participants[0];
-    let channelSpecificPreview = () => {
-      if (channel.meetingParticipants?.length > 0) {
-        return (
-          <div className='call'>
-            <div className='participants'>
-              {channel.meetingParticipants.map(p => (<CallParticipantPreview key={p._id} user={p} />))}
-            </div>
-            <div className='action-bar center'>
-              <button className='action-button join' onClick={() => { joinCall(); }}><span className="icon material-symbols-outlined">
-                mic
-              </span>Join Call</button>
-            </div>
-
-          </div>
-        );
-      } else {
-        return (
-          <div className=''>
-            <button onClick={() => { joinCall(); }}>Start Call</button>
-          </div>
-        )
-      }
-    }
+  } else { // the current call is not in this channel, but we still want to show a preview and our current call.
 
     return (
       <>
-        {channelSpecificPreview()}
+        {<ChannelSpecificPreview channel={channel} actions={actions} info={info} />}
         {meeting ? (
-          <div className='call inwindow'>
-            <div className='participants'>
-              <CallParticipant key={leadParticipant._id} participant={leadParticipant} />
-            </div>
-
-          </div>
+          <CallInWindow participants={participants} meeting={meeting} actions={actions} info={info} />
         ) : ''}
 
       </>
@@ -274,6 +263,153 @@ export default function Call({ }) {
   }
 
 }
+
+function ChannelSpecificPreview({ channel, actions, info }) {
+  if (info.state === 'joining') {
+    return (<div className='call'>
+      <div className='participants'>
+        {channel.meetingParticipants.map(p => (<CallParticipantPreview key={p._id} user={p} />))}
+      </div>
+      <button className='action-button join' disabled><span className="icon material-symbols-outlined">
+        mic
+      </span>Joining <span className='loader'></span></button>
+    </div>)
+  }
+  if (channel.meetingParticipants?.length > 0) {
+    return (
+      <div className='call'>
+        <div className='participants'>
+          {channel.meetingParticipants.map(p => (<CallParticipantPreview key={p._id} user={p} />))}
+        </div>
+        <div className='action-bar center'>
+          <button className='action-button join' onClick={() => { actions.joinCall(); }}><span className="icon material-symbols-outlined">
+            mic
+          </span>Join Call</button>
+        </div>
+
+      </div>
+    );
+  } else {
+    return (
+      <div className=''>
+        <button onClick={() => { actions.joinCall(); }}>Start Call</button>
+      </div>
+    )
+  }
+}
+
+function CallActions({ actions, info }) {
+  return (
+    <>
+      <button className={`action-button secondary ${info.isScreenSharing ? 'active' : ''}`} onClick={async () => { await info.meeting.startScreenShare(); actions.setIsScreenSharing(true) }}> <span className='icon material-symbols-outlined'>screen_share</span></button>
+
+      <button className={`action-button secondary ${info.isMuted ? 'active' : ''}`} onClick={() => { actions.setIsMuted(!info.isMuted) }}> <span className='icon material-symbols-outlined'>{info.isMuted ? 'mic_off' : 'mic'}</span> </button>
+      <button className='action-button secondary leave' onClick={async () => { actions.leaveCall(); }}><span className='icon material-symbols-outlined'>call_end</span></button>
+    </>
+
+  )
+
+}
+
+const CallInWindow = ({ participants, meeting, actions, info }) => {
+  const dragRef = useRef(null);
+  const position = useRef({ x: 0, y: 0 });
+
+  useEffect(() => {
+    if (dragRef.current) {
+      const interactable = interact(dragRef.current)
+
+      interactable
+        .draggable({
+          inertia: {
+            resistance: 30,
+            minSpeed: 50,
+            endSpeed: 10
+          },
+          modifiers: [
+            interact.modifiers.restrictRect({
+              restriction: document.body.getBoundingClientRect(),
+            }),
+
+          ],
+
+          listeners: {
+            start(event) {
+              event.target.classList.add("dragging"); // Add a class for visual feedback
+            },
+            move(event) {
+              position.current.x += event.dx;
+              position.current.y += event.dy;
+
+              requestAnimationFrame(() => {
+                event.target.style.transform = `translate(${position.current.x}px, ${position.current.y}px)`;
+              });
+            },
+            end(event) {
+              event.target.classList.remove("dragging");
+              snapToNearestEdge(event.target);
+            }
+          }
+
+        })
+
+
+    }
+  }, []);
+
+  const snapToNearestEdge = (element) => {
+    const bounds = element.getBoundingClientRect();
+    const viewportWidth = window.innerWidth;
+    const viewportHeight = window.innerHeight;
+
+    let newX = position.current.x;
+    let newY = position.current.y;
+
+    // Calculate closest edge (left, right, top, bottom)
+    const distances = {
+      left: bounds.left,
+      right: viewportWidth - bounds.right,
+      top: bounds.top,
+      bottom: viewportHeight - bounds.bottom
+    };
+    console.log(distances)
+    const closestEdge = Object.entries(distances).sort(([k1, v1], [k2, v2]) => v1 - v2)[0][0];
+    console.log(closestEdge)
+    if (closestEdge === "right") newX = -16;
+    if (closestEdge === "left") newX = -viewportWidth + bounds.width + 16;
+    if (closestEdge === "top") newY = 0 + 16;
+    if (closestEdge === "bottom") newY = viewportHeight - bounds.height - 16;
+    Math.clamp = (num, min, max) => Math.min(Math.max(num, min), max);
+    newX = Math.clamp(newX, -viewportWidth + bounds.width + 16, -16);
+    newY = Math.clamp(newY, 0 + 16, viewportHeight - bounds.height - 16);
+
+    // Apply snapping smoothly
+    requestAnimationFrame(() => {
+      element.style.transition = "transform 0.3s ease-out";
+      element.style.transform = `translate(${newX}px, ${newY}px)`;
+      position.current.x = newX;
+      position.current.y = newY;
+
+      setTimeout(() => {
+        element.style.transition = "";
+      }, 300);
+    });
+  };
+
+  let leadParticipant = participants.find(e => e.isSpeaking) || participants[0];
+
+  return (
+    <div className="call inwindow draggable" ref={dragRef}>
+      <div className="participants">
+        <CallParticipant key={leadParticipant._id} participant={leadParticipant} />
+      </div>
+      <div className='actions'>
+        <CallActions actions={actions} info={info} />
+      </div>
+    </div>
+  );
+};
+
 function CallParticipantPreview({ user }) {
 
   return (
@@ -295,7 +431,7 @@ function CallParticipant({ participant }) {
   const audioRef = useRef(null);
   const friends = useContext(FriendsContext);
   const user = friends.getKnownUserById(participant.externalUserId);
- 
+
   useEffect(() => {
     if (videoRef.current && participant.videoStream) {
       videoRef.current.srcObject = participant.videoStream;

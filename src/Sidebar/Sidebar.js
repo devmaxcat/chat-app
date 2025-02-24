@@ -20,10 +20,8 @@ export default function Sidebar() {
         <div id='sidebar'>
             <Searcher onSearch={onSearch}>
                 <div className={`sidebar-mover-opposite ${searching}`}>
-                    Search for users and channels
-                    <div>
-                        DISCOVER MENU
-                    </div>
+                    Type 'hidden' to see hidden channels.
+                    
                 </div>
             </Searcher>
             <div className={`sidebar-mover ${searching}`}>

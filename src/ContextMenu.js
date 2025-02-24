@@ -10,6 +10,10 @@ export default function ContextMenuButton({ children, menu, className }) {
         document.addEventListener("mouseup", (() => {
             setOpen(false)
         }))
+        return () => {
+            document.removeEventListener("mouseup", (() => {
+                setOpen(false)
+            }))}
     }, [setOpen])
 
     function opener(e) {

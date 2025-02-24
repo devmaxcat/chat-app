@@ -63,9 +63,9 @@ export default function Channels() {
 
 
 
-function ChannelItem({ data }) {
+export function ChannelItem({ data, alwaysShow }) {
     let userData = useContext(UserContext)
-    let friends = useContext(FriendsContext)
+    let hidden = window.localStorage.getItem(`prefersHidden_${data._id}`) == 'true'
 
     let channelName;
     let channelIconURL;
@@ -94,6 +94,10 @@ function ChannelItem({ data }) {
         channelIconURL = data?.icon || '/default-group-pfp.webp'
     }
 
+    if (hidden && !data.unread && !alwaysShow && !location.pathname.includes(`me/channel/${data._id}`)) {
+        return
+    }
+
     return (
 
         <Link className={`channel-selector ${extraclass}`} to={'/me/channel/' + data._id} onContextMenu={handleClick()}>
@@ -111,14 +115,15 @@ function ChannelItem({ data }) {
                 </div></div>
             <div>
                 <div className='input-wrapper disabled-plaintext'>
+                    <span class="material-symbols-outlined visibility-off" hidden={!hidden ? 'hidden' : ''}>
+                        visibility_off
+                    </span>
                     <input className='title' defaultValue={channelName} disabled>
                     </input>
 
                     {/* {data.unread} */}
                 </div>
-                <div className='last-message'>
-                    {friends.getKnownUserById(data.lastMessage?.author)?.username || data.lastMessage?.author?.username}: {data.lastMessage?.text_content}
-                </div>
+                <ChannelLastMessage data={data}></ChannelLastMessage>
             </div>
 
 
@@ -139,5 +144,43 @@ function ChannelItem({ data }) {
         </Link>
 
 
+    )
+}
+
+function ChannelLastMessage({ data }) {
+    let friends = useContext(FriendsContext)
+    let user = useContext(UserContext)
+    let sender = friends.getKnownUserById(data.lastMessage?.author)?.username || data.lastMessage?.author?.username
+    let content = data.lastMessage?.text_content || ''
+    if (!content.trim().length > 0) {
+        if (data.lastMessage?.media) {
+            content = `*${data.lastMessage?.media.length} attachments*`
+        }
+    }
+
+
+    let text = `${sender}:  ${content}`
+    if (data.meetingParticipants?.length > 0) {
+        if (data.meetingParticipants.find((e) => e._id == user._id)) {
+            return (
+                <div className='last-message'>
+                    <span className='active'>
+                        In Call
+                    </span> {text}
+                </div>
+
+            )
+        } else {
+            return (
+                <div className='last-message'>
+                    <span className='italic'>Call ({data.meetingParticipants.length})</span> {text}
+                </div>
+            )
+        }
+    }
+    return (
+        <div className='last-message'>
+            {text}
+        </div>
     )
 }

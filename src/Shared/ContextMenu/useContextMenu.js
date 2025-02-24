@@ -10,21 +10,18 @@ export default function useContextMenu() {
     })
 
     useEffect(() => {
-        if (!context.open) { return }
-        document.addEventListener("mouseup", (() => { // This and the event bound in GenericContextMenu.js within ContextItem  must be the same event, I'd use the "click" event but then it doesnt close old context menus, maybe find a solution to migrate towards the click event?
+        function close(e) {
+            console.log('uh')
             setContext({
                 ...context,
                 open: false
             })
-        }))
-        return () => document.removeEventListener("mouseup", (() => {
-            setContext({
-                ...context,
-                open: false
-            })
-        })
-        )
-     
+        }
+        if (context.open) {
+            document.addEventListener("mouseup", close)
+        }
+        return () => document.removeEventListener("mouseup", close)
+
     }, [context])
 
     const open = (x, y, e) => {
@@ -33,7 +30,7 @@ export default function useContextMenu() {
             open: true,
             target: e.currentTarget,
             position: {
-               x: (x + 5), y: (y + 2)
+                x: (x + 5), y: (y + 2)
             }
         })
     }
@@ -51,7 +48,7 @@ export default function useContextMenu() {
         handleClick,
         context,
         open,
-        
+
     }
 }
 

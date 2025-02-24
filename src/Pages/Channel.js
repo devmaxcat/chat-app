@@ -16,6 +16,7 @@ import { Remarkable } from 'remarkable';
 import ImageWrapper from '../Shared/ImageWrapper'
 import ProfilePicture, { getAvatarFromUser } from '../Shared/ProfilePicture'
 import Call from '../Call'
+import { use } from 'react'
 
 
 
@@ -141,16 +142,16 @@ export default function Channel() {
                 setHistory([data, ...historyReference.current.filter(e => !e.temporary)])
             }
         }
-        document.addEventListener('focusin', function () {
-            let newHistory = [...historyReference.current]
-            newHistory.forEach((e) => {
-                if (e.unviewed) {
-                    e.unviewed = false
-                }
-            })
-            //setHistory(newHistory)
-        }
-        )
+        // document.addEventListener('focusin', function () {
+        //     let newHistory = [...historyReference.current]
+        //     newHistory.forEach((e) => {
+        //         if (e.unviewed) {
+        //             e.unviewed = false
+        //         }
+        //     })
+        //     //setHistory(newHistory)
+        // }
+        // )
 
 
 
@@ -179,6 +180,34 @@ export default function Channel() {
 
         setHistory(['LOADING'])
     }, [channelid])
+    useEffect(() => {
+        console.log(channelData.unread, document.hasFocus())
+        function removeMissedMessages() {
+            let newHistory = [...historyReference.current]
+            newHistory.forEach((e) => {
+                if (e.unviewed) {
+                    e.unviewed = false
+                }
+            })
+            setHistory(newHistory)
+            channels.read(channelid)
+            document.removeEventListener('focusin', removeMissedMessages)
+        }
+
+        if (channelData.unread) {
+            if (document.hasFocus()) {
+                channels.read(channelid)
+            }
+
+            //document.addEventListener('focusin', removeMissedMessages)
+
+        }
+
+
+        return () => {
+            document.removeEventListener('focusin', removeMissedMessages)
+        }
+    }, [channels, channelData, channelid])
 
 
     let channelName;
@@ -317,6 +346,7 @@ function Message({ data, previous, index, history }) {
     } = useContextMenu()
     const userContextMenu = useContextMenu()
 
+
     const [embeds, setEmbeds] = useState(function () {
         let embedded = []
         if (data.media) {
@@ -369,6 +399,8 @@ function Message({ data, previous, index, history }) {
     //     }
 
     // })
+
+
     if (data.text_content.length > 1000) {
         data.text_content = data.text_content.slice(0, 1000) + '...'
     }
@@ -381,6 +413,21 @@ function Message({ data, previous, index, history }) {
     else displaytime = time.format('L LT ')
 
     MessageIconURL = data.author?.icon || '/default-user-pfp.webp'
+
+    if (data.system == 0) {
+        return (
+            <div className='message system'>
+                <div className='gutter'></div>
+                <div>{data.text_content}</div>
+                <div className='bar'>
+                <div className='time'>
+                    {displaytime}
+                </div>
+                </div>
+                
+            </div>
+        )
+    }
 
 
     // if the last message was sent by the same person and it hasn't been more than 5 minutes, then combine the messages together.

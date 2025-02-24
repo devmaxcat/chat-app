@@ -25,6 +25,21 @@ export default function GroupDMContextMenu({ channel, context }) {
     {
       label: 'Change Icon'
     },
+
+    {
+      label: 'Hide',
+      callback: async() => {
+        channels.hide(channel._id, true)
+      },
+      hidden: window.localStorage.getItem(`prefersHidden_${channel._id}`) == 'true'
+    },
+    {
+      label: 'Show',
+      callback: async() => {
+        channels.hide(channel._id, false)
+      },
+      hidden: window.localStorage.getItem(`prefersHidden_${channel._id}`) == 'false' || window.localStorage.getItem(`prefersHidden_${channel._id}`) == null
+    },
     {
       label: 'Leave',
       callback: async () => {

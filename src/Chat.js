@@ -75,6 +75,7 @@ export default function Chat() {
     const [friendRequests, setFriendRequests] = useState([])
     const [client, setClient] = useState(null)
     const [alerts, setAlerts] = useState([])
+    console.log('chat render toplevel')
     const [profileViewer, setProfileViewer] = useState({
         current: null,
         open(user) {
@@ -152,18 +153,18 @@ export default function Chat() {
         setClient(socket)
 
     }, [])
-    
+
     useEffect(() => {
         if (!client) { return }
-        let cachedMessages = {}
+       
         async function refreshChannels() {
-            
-            console.trace('MSC REFRESHING CHANNELS')
-        
+
+            console.trace('REFRESHING CHANNELS')
+
            
             // setActivityStatus(1, user)
             let data = await requester(true, '/api/channel/get', 'GET', true)
-
+            data.cachedMessages = {}
             if (!data.error) {
                 data.refresh = refreshChannels
                 data.changeChannelName = async function (channelid, name, callback) {
@@ -180,52 +181,67 @@ export default function Chat() {
 
                 }
                 data.getMessages = async function (channelid, limit, offset) {
-                    console.log('MSC check', cachedMessages, cachedMessages[channelid], channelid)
-                    if (cachedMessages[channelid]) {
-                 
-                        if (new Date().getTime() - cachedMessages[channelid].timestamp < 1000 * 60 * 5) {
-                        console.log('MSC RETRIEVED MESSAGES FROM CACHE', cachedMessages[channelid].msgs.msg)
-                        return cachedMessages[channelid].msgs
+                    console.log('MSC check', data.cachedMessages, data.cachedMessages[channelid], channelid)
+                    if (data.cachedMessages[channelid] && data.cachedMessages[channelid].hasRecieved) {
+
+                        if (new Date().getTime() - data.cachedMessages[channelid].timestamp < 1000 * 60 * 5) {
+                            console.log('MSC RETRIEVED MESSAGES FROM CACHE', data.cachedMessages[channelid].msgs.msg)
+                            return data.cachedMessages[channelid].msgs
                         }
                     }
                     let msgs = await requester(true, '/api/message/history?' + new URLSearchParams({ channelid, limit, offset }), 'GET', true)
                     console.log(msgs)
                     if (!msgs.error) {
 
-                        data.addCachedMessages(channelid, msgs)
+                        data.addCachedMessages(channelid, msgs, true)
                         return msgs
                     } else {
                         return null
                     }
                 }
-                data.addCachedMessages = function (channelid, msgs) {
+                data.addCachedMessages = function (channelid, msgs, fullRetrieval) {
                     console.log('MSC ADDING MESSAGES TO CACHE', msgs);
-                    if (!cachedMessages[channelid]) {
-                        cachedMessages[channelid] = { msgs: [], timestamp: new Date().getTime() };
+                    if (!data.cachedMessages[channelid]) {
+                        data.cachedMessages[channelid] = { msgs: [], timestamp: new Date().getTime() };
                     }
-                
+
                     // Combine the cached messages and new messages, then filter out duplicates
-                    const combinedMsgs = [...cachedMessages[channelid].msgs, ...msgs];
+                    const combinedMsgs = [...data.cachedMessages[channelid].msgs, ...msgs];
                     const uniqueMsgs = combinedMsgs.filter((e, i, a) => a.findIndex((ee) => ee._id == e._id) === i);
-                
+
                     // Sort the messages by createdAt
                     const sortedMsgs = uniqueMsgs.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-                
+
                     // Update the cache with the filtered and sorted messages
-                    cachedMessages[channelid] = {
+                    data.cachedMessages[channelid] = {
                         msgs: sortedMsgs,
-                        timestamp: new Date().getTime()
+                        timestamp: new Date().getTime(),
+                        hasRecieved: fullRetrieval
                     };
                 };
+                data.read = function(channelid) {
+                    let c = data.find(e => e._id == channelid)
+                    c.unread = 0
+                    data.updateState()
+                }
                 data.messageRecieved = function (msg) {
-                    data.find(e => e._id == msg.channel_id).lastMessage = msg
+                    let c = data.find(e => e._id == msg.channel_id)
+                    c.lastMessage = msg
+                    c.unread++
                     data.addCachedMessages(msg.channel_id, [msg])
-                    setChannels(data)
-                    
+                   
+                    data.updateState()
+
+                }
+                data.updateState = function () {
+                    setChannels(Object.assign([], data))
                 }
                 data.messagedChanged = function (msg) { }
                 data.messagedDeleted = function (msg) { }
-
+                data.hide = function(channelid, hide) {
+                    window.localStorage.setItem(`prefersHidden_${channelid}`, hide)
+                    data.updateState()
+                }
                 data.leave = async function name(channelid, callback) {
                     let data = await requester(true, '/api/channel/leave', 'POST', true, { channelid })
 
@@ -342,7 +358,7 @@ export default function Chat() {
 
     if (!(client && friendRequests && friendRequests.isFriends && channels && channels.refresh)) {
         return (
-            <div className='bootstrapper' ><div className="loader-2"></div></div>
+            <div className='bootstrapper' ><div className='chat-loader'></div></div>
         )
 
     }

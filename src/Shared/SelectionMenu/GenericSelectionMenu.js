@@ -33,9 +33,15 @@ function valueReducer(values, action) {
 export default function GenericSelectionMenu({ list, title, context, onSelectionComplete, action }) {
     const [query, setQuery] = useState('')
     const [values, dispatch] = useReducer(valueReducer, [])
+    const [busy, setBusy] = useState(false)
 
     const sortedArray = list.sort((a, b) => b.username.indexOf(query) - a.username.indexOf(query)).filter((e) => e.username.indexOf(query) != -1);
 
+    async function selectionComplete() {
+        setBusy(true)
+        await onSelectionComplete(values)
+        setBusy(false)
+    }
 
     function handleSelection(state, value) {
         setQuery('')
@@ -105,7 +111,7 @@ export default function GenericSelectionMenu({ list, title, context, onSelection
 
             </div>
 
-            <button tabIndex={sortedArray.length} className='action-button' onClick={() => onSelectionComplete(values)}>{action}</button>
+           { busy ? ( <button tabIndex={sortedArray.length} className='action-button' disabled><div className='loader'></div></button>) : (<button tabIndex={sortedArray.length} className='action-button' onClick={() => selectionComplete(values)}>{action}</button>)}
         </div>
 
     )

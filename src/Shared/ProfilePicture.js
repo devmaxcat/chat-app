@@ -12,6 +12,8 @@ export function getAvatarFromUser(user = { username: '' }) {
     }
 }
 
+let cachedAvatars = {}
+
 function ProfilePicture({ entity, className, editing, fallbackLetterSize, includeContextMenu }) {
     let {
         handleClick,
@@ -25,17 +27,19 @@ function ProfilePicture({ entity, className, editing, fallbackLetterSize, includ
 
     let source = entity.icon;
 
-    if (sourceFinal) {
-        source = sourceFinal
+    if (sourceFinal || cachedAvatars[name]) {
+        source = sourceFinal || cachedAvatars[name]
     } else {
         if (!entity.icon && !entity.username) {
             //source = generateAvatar(entity.name, '', undefined, true)
             source = null;
             generateAvatar(name, '', { size: 500, customIcon: '/user-groups.svg' }).then((res) => {
+                cachedAvatars[name] = res
                 setSourceFinal(res)
             })
         } else if (!entity.icon) {
             source = generateAvatar(name, undefined, undefined, true)
+            cachedAvatars[name] = source
         }
 
     }
