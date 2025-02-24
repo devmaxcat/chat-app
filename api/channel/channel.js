@@ -55,7 +55,7 @@ exports.create = async (req, res, next) => {
   try {
     recipients = recipients.map((e) => { return new ObjectId(e) })
   } catch (error) {
-    res.status(400).json({error: 'Malformed Input', message: 'Malformed Input' })
+    res.status(400).json({ error: 'Malformed Input', message: 'Malformed Input' })
   }
   if (!recipients.includes(user._id)) {
     recipients.unshift(user._id)
@@ -130,7 +130,7 @@ exports.remove = async function (req, res, next) {
     const channel = await Channel.findOne({ _id: channelid })
     channel.recipients.filter((e) => e.toString() != userid)
     channel.save()
- 
+
     io.in(channel._id.toString()).emit('ChannelUpdate')
     io.to(userid).socketsLeave(channel._id.toString());
 
@@ -151,7 +151,7 @@ exports.leave = async function (req, res, next) {
     channel.recipients = channel.recipients.filter((e) => e.toString() != user._id.toString())
     await channel.save()
 
-   
+
 
     io.in(channel._id.toString()).emit('ChannelUpdate')
     io.to(user._id.toString()).socketsLeave(channel._id.toString());
@@ -175,10 +175,16 @@ exports.webhook.callJoined = async function (req, res, next) {
     const { roomName, externalUserId, meta } = req.body.data
     console.log(roomName, externalUserId, meta)
     const channel = await Channel.findOne({ _id: roomName })
+    let originalLength = channel.meetingParticipants.length
     channel.meetingParticipants.push(new ObjectId(externalUserId))
     await channel.save()
     io.to(channel._id.toString()).emit('ChannelUpdate')
     res.status(200).json({ message: 'User joined call', channel })
+    if (originalLength
+      == 0) {
+      sendSystemMessage(channel._id, `${meta.displayName || meta.username} started a call`)
+    }
+
   }
   catch (err) {
     res.status(500).json({ error: 'Internal Server Error', message: 'Something went wrong. ' + err })
@@ -194,6 +200,11 @@ exports.webhook.callLeft = async function (req, res, next) {
     await channel.save()
     io.to(channel._id.toString()).emit('ChannelUpdate')
     res.status(200).json({ message: 'User left call', channel })
+    if (channel.meetingParticipants.length == 0) {
+      sendSystemMessage(channel._id, `The call has ended.`)
+    }
+
+
   }
   catch (err) {
     res.status(500).json({ error: 'Internal Server Error', message: 'Something went wrong. ' + err })
@@ -209,6 +220,8 @@ exports.callJoined = async function (req, res, next) {
     channel.meetingParticipants.push(new ObjectId(user._id))
     await channel.save()
     res.status(200).json({ message: 'User joined call', channel })
+
+
   }
   catch (err) {
     res.status(500).json({ error: 'Internal Server Error', message: 'Something went wrong. ' + err })
@@ -301,7 +314,7 @@ exports.call = async function (req, res, next) { // returns a token to create or
           .then((response) => {
             response.json().then((response) => {
               console.log(response)
-              sendSystemMessage(channelid, `${user.displayName} started a call `)
+
               res.status(200).json({ message: 'Call started', token: response.token, response })
             })
 
