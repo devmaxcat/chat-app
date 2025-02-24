@@ -18,6 +18,10 @@ const MessageSchema = new Mongoose.Schema({
     },
     media: {
         type: Array
+    },
+    system: {
+        type: Number,
+        default: undefined // 0 = notification, single line of text, no pfp. 1 = message from application. 2 = message from us.
     }
 }, { timestamps: true })
 

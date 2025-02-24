@@ -6,6 +6,7 @@ const { User, ExposableFields } = require('../../schemas/User')
 
 const { io } = require('../../server')
 const Message = require('../../schemas/Message')
+const { sendSystemMessage } = require('../message/message')
 
 // this might need pagination eventually...
 exports.get = async (req, res, next) => { // Gets a logged in user's channels that they are a recieptient of
@@ -21,23 +22,25 @@ exports.get = async (req, res, next) => { // Gets a logged in user's channels th
     //console.log(channel.lastRead, new ObjectId(sessionData._id))
     let mostCurrentMessage = await Message.findOne({
       channel_id: channel._id,
+      system: { $ne: 0 }
     }).sort({ createdAt: -1 })
     let lastRead = channel.lastRead.find(read => read.user?.equals(new ObjectId(sessionData._id)))
     if (!lastRead) { lastRead = { user: new ObjectId(sessionData._id), timestamp: channel.createdAt } }
     if (lastRead) {
       // get the last message sent after the last read time
-      
+
       let messagesSinceLastRead = await Message.countDocuments({
         channel_id: channel._id,
-        createdAt: { $gt: lastRead.timestamp }
+        createdAt: { $gt: lastRead.timestamp },
+        system: { $ne: 0 }
       })
       channel.unread = messagesSinceLastRead
       channel.lastMessage = mostCurrentMessage
 
     } else {
-      channel.unread = 0 
+      channel.unread = 0
     }
-   
+
     console.log(channel.unread)
   }
 
@@ -49,7 +52,11 @@ exports.create = async (req, res, next) => {
   let user = req.session?.user
   let { recipients } = req.body
 
-  recipients = recipients.map((e) => { return new ObjectId(e) })
+  try {
+    recipients = recipients.map((e) => { return new ObjectId(e) })
+  } catch (error) {
+    res.status(400).json({error: 'Malformed Input', message: 'Malformed Input' })
+  }
   if (!recipients.includes(user._id)) {
     recipients.unshift(user._id)
   }
@@ -67,7 +74,7 @@ exports.create = async (req, res, next) => {
   channel.save()
   channel.recipients.forEach((rid) => {
     io.to(rid.toString()).socketsJoin(channel._id.toString());
-    io.to(channel._id.toString()).emit('ChannelUpdate')
+    io.to(rid.toString()).emit('ChannelUpdate');
   })
 
   res.status(200).json({ message: 'Channel Created', channel })
@@ -82,6 +89,7 @@ exports.update = async function (req, res, next) {
 
     const channel = await Channel.updateOne({ _id: channelid }, { name })
     res.status(200).json({ channel, message: 'Channel Updated.' })
+    sendSystemMessage(channelid, `${user.displayName || user.username} has renamed the chat to ${name}.`)
   } catch {
     res.status(500).json({ error: 'Internal Server Error', message: 'Something went wrong.' })
   }
@@ -97,13 +105,16 @@ exports.add = async function (req, res, next) {
     const channel = await Channel.findOne({ _id: channelid })
     channel.recipients.push(...recipients.map(e => new ObjectId(e)))
     channel.save()
-
+    console.log(channel.recipients, 'ahem, recipients post add')
     channel.recipients.forEach((rid) => {
       io.to(rid.toString()).socketsJoin(channel._id.toString());
-      io.to(channel._id.toString()).emit('ChannelUpdate')
+      io.to(rid.toString()).emit('ChannelUpdate');
     })
+    //io.in(channel._id.toString()).emit('ChannelUpdate');
 
     res.status(200).json({ channel, message: 'Channel Updated.' })
+    const addedUsers = await User.find({ _id: { $in: recipients } })
+    sendSystemMessage(channelid, `${user.displayName} has added ${addedUsers.map((e) => e.displayName || e.username).join(', ')} to the chat.`)
   } catch (err) {
     console.log(err)
     res.status(500).json({ error: 'Internal Server Error', message: 'Something went wrong.' })
@@ -119,7 +130,12 @@ exports.remove = async function (req, res, next) {
     const channel = await Channel.findOne({ _id: channelid })
     channel.recipients.filter((e) => e.toString() != userid)
     channel.save()
+ 
+    io.in(channel._id.toString()).emit('ChannelUpdate')
+    io.to(userid).socketsLeave(channel._id.toString());
+
     res.status(200).json({ channel, message: 'Channel Updated.' })
+    sendSystemMessage(channelid, `${user.displayName} has left the chat.`)
   } catch {
     res.status(500).json({ error: 'Internal Server Error', message: 'Something went wrong.' })
   }
@@ -135,6 +151,11 @@ exports.leave = async function (req, res, next) {
     channel.recipients = channel.recipients.filter((e) => e.toString() != user._id.toString())
     await channel.save()
 
+   
+
+    io.in(channel._id.toString()).emit('ChannelUpdate')
+    io.to(user._id.toString()).socketsLeave(channel._id.toString());
+
     if (channel.recipients.length == 0) {
       await Channel.deleteOne({ _id: channel._id })
     }
@@ -142,6 +163,7 @@ exports.leave = async function (req, res, next) {
 
 
     res.status(200).json({ channel, message: 'Channel Updated.' })
+    sendSystemMessage(channelid, `${user.displayName} has left the chat.`)
   } catch (err) {
     res.status(500).json({ error: 'Internal Server Error', message: 'Something went wrong. ' + err })
   }
@@ -279,6 +301,7 @@ exports.call = async function (req, res, next) { // returns a token to create or
           .then((response) => {
             response.json().then((response) => {
               console.log(response)
+              sendSystemMessage(channelid, `${user.displayName} started a call `)
               res.status(200).json({ message: 'Call started', token: response.token, response })
             })
 

@@ -12,7 +12,7 @@ exports.history = async (req, res, next) => {
   let sessionData = req.session?.user
   let user = req.session?.user
 
-  
+
 
   if (!req.query.channelid || !ObjectId.isValid(req.query?.channelid)) {
     res.status(400).json({
@@ -42,14 +42,14 @@ exports.history = async (req, res, next) => {
 
   await Channel.updateOne(
     { _id: req.query.channelid },
-    { 
+    {
       $pull: { lastRead: { user: new ObjectId(sessionData._id) } }
     }
   );
-  
+
   await Channel.updateOne(
     { _id: req.query.channelid },
-    { 
+    {
       $push: { lastRead: { user: new ObjectId(sessionData._id), timestamp: new Date() } }
     }
   );
@@ -64,24 +64,45 @@ exports.history = async (req, res, next) => {
   res.setHeader('cache-control', 'max-age=10')
   res.status(200).json(data)
 
-  
+
+}
+
+
+exports.sendSystemMessage = async (channel_id, text_content, level = 0) => {
+  let user
+  let author = await User.findOne({ username: 'SYS!MSGS' })
+  if (!author) {
+    author = await User.create({ username: 'SYS!MSGS', email: '', password: 'NO_PASSWORD' })
+  }
+  let message = await (await Message.create({ channel_id, text_content, author, system: level })).populate('author', ExposableFields)
+  try {
+    let channel = await Channel.findById(channel_id)
+    channel.lastActiveTime = new Date().toISOString()
+    await channel.save()
+  } catch (e) {
+    // oh well
+  }
+ 
+
+  io.to(message.channel_id.toString()).emit("MessageRecieved", message)
+
 }
 
 exports.create = async (req, res) => {
   let user = req.session?.user
 
   const { channel_id, text_content } = req.body
-  const author  = user._id
+  const author = user._id
   let media = []
   console.log(req.files, req.file, req.media)
-  
-  if (req.files) {
-   
 
-    for (const file of req.files){
+  if (req.files) {
+
+
+    for (const file of req.files) {
       let filename = file.fieldname
-      
-      let parsed = parser.format(filename.substring(filename.lastIndexOf('.')+1, filename.length) || filename, file.buffer).content //=> "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAA...", {
+
+      let parsed = parser.format(filename.substring(filename.lastIndexOf('.') + 1, filename.length) || filename, file.buffer).content //=> "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAA...", {
       const result = await cloudinary.uploader.upload(parsed, {
         resource_type: 'auto',
         use_filename: true,
@@ -92,32 +113,32 @@ exports.create = async (req, res) => {
       });
       console.log(result);
       media.push(result)
-      
+
     }
 
-    
+
     //console.log(req.file, uploadResult)
-    
+
   } else {
-  
+
   }
 
 
 
-  let message = await (await Message.create({channel_id, text_content, author, media})).populate('author', ExposableFields)
+  let message = await (await Message.create({ channel_id, text_content, author, media })).populate('author', ExposableFields)
   let channel = await Channel.findById(channel_id)
   channel.lastActiveTime = new Date().toISOString()
   await channel.save()
   await Channel.updateOne(
-    { _id: channel_id},
-    { 
+    { _id: channel_id },
+    {
       $pull: { lastRead: { user: new ObjectId(user._id) } }
     }
   );
-  
+
   await Channel.updateOne(
     { _id: channel_id },
-    { 
+    {
       $push: { lastRead: { user: new ObjectId(user._id), timestamp: new Date() } }
     }
   );

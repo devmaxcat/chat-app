@@ -97,8 +97,9 @@ exports.create = async (req, res, next) => {
           name: `DM Between ${request.from} & ${request.to}`,
           type: 0
         })
+        io.to(request.from.toString()).to(request.to.toString()).socketsJoin(nc._id.toString())
+        io.to(request.from.toString()).to(request.to.toString()).emit('ChannelUpdate')
 
-        io.to(request.from.toString()).to(request.to.toString()).emit('ChannelUpdate', nc)
       }
 
       message = "Friend added!"
@@ -199,12 +200,14 @@ exports.respond = async (req, res, next) => {
       });
       console.log(request.to, request.from, existingDM)
       if (!existingDM) {
-        await Channel.create({
+        let nc = await Channel.create({
           owner_id: request.from,
           recipients: [request.from, request.to],
           name: `DM Between ${request.from} & ${request.to}`,
           type: 0
         })
+        io.to(request.from.toString()).to(request.to.toString()).socketsJoin(nc._id.toString())
+        io.to(request.from.toString()).to(request.to.toString()).emit('ChannelUpdate')
       }
 
     }

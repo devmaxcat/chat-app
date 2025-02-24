@@ -1,5 +1,6 @@
 const Mongoose = require("mongoose")
 const { ObjectId } = require("mongodb")
+const User = require("./User")
 
 const ChannelSchema = new Mongoose.Schema({
     owner_id: { // can be a user or guild..?
@@ -15,30 +16,30 @@ const ChannelSchema = new Mongoose.Schema({
         default: 'Chat',
         minlength: 1,
     },
-    recipients: {
-        type: Array,
-        default: [{
+    recipients: [
+        {
             type: ObjectId,
-            ref: 'user'
-        }]
-    },
+            ref: 'User',
+        }
+    ],
     lastActiveTime: {
         type: Date,
         default: new Date(),
     },
     lastRead: {
         type: Array,
-        default: [{
-           
-        }]
+        default: []
     },
-    meetingParticipants: {
-        type: Array,
-        default: [{
+    lastMessage: {
+        type: ObjectId,
+        ref: 'Message',
+    },
+    meetingParticipants: [
+        {
             type: ObjectId,
-            ref: 'user'
-        }]
-    }
+            ref: 'User',
+        }
+    ]
 }, { timestamps: true })
 
 const Channel = Mongoose.model("Channel", ChannelSchema)
