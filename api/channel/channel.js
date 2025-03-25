@@ -89,7 +89,7 @@ exports.update = async function (req, res, next) {
 
     const channel = await Channel.updateOne({ _id: channelid }, { name })
     res.status(200).json({ channel, message: 'Channel Updated.' })
-    sendSystemMessage(channelid, `${user.displayName || user.username} has renamed the chat to ${name}.`)
+    sendSystemMessage(channelid, `${user.displayName || user.username} has renamed the chat to ${name}.`, 0, 'CHANNEL_RENAME', [user.displayName || user.username, name ])
   } catch {
     res.status(500).json({ error: 'Internal Server Error', message: 'Something went wrong.' })
   }
@@ -114,7 +114,7 @@ exports.add = async function (req, res, next) {
 
     res.status(200).json({ channel, message: 'Channel Updated.' })
     const addedUsers = await User.find({ _id: { $in: recipients } })
-    sendSystemMessage(channelid, `${user.displayName} has added ${addedUsers.map((e) => e.displayName || e.username).join(', ')} to the chat.`)
+    sendSystemMessage(channelid, `${user.displayName} has added ${addedUsers.map((e) => e.displayName || e.username).join(', ')} to the chat.`, 0, 'CHANNEL_USER_ADD_MANY', [user.displayName, addedUsers.map((e) => e.displayName || e.username).join(', ')])
   } catch (err) {
     console.log(err)
     res.status(500).json({ error: 'Internal Server Error', message: 'Something went wrong.' })
@@ -135,7 +135,7 @@ exports.remove = async function (req, res, next) {
     io.to(userid).socketsLeave(channel._id.toString());
 
     res.status(200).json({ channel, message: 'Channel Updated.' })
-    sendSystemMessage(channelid, `${user.displayName} has left the chat.`)
+    sendSystemMessage(channelid, `${user.displayName} has left the chat.`, 0, 'CHANNEL_USER_REMOVE', [user.displayName])
   } catch {
     res.status(500).json({ error: 'Internal Server Error', message: 'Something went wrong.' })
   }
@@ -163,7 +163,7 @@ exports.leave = async function (req, res, next) {
 
 
     res.status(200).json({ channel, message: 'Channel Updated.' })
-    sendSystemMessage(channelid, `${user.displayName} has left the chat.`)
+    sendSystemMessage(channelid, `${user.displayName} has left the chat.`, 0, 'CHANNEL_USER_REMOVE', [user.displayName])
   } catch (err) {
     res.status(500).json({ error: 'Internal Server Error', message: 'Something went wrong. ' + err })
   }
@@ -182,7 +182,7 @@ exports.webhook.callJoined = async function (req, res, next) {
     res.status(200).json({ message: 'User joined call', channel })
     if (originalLength
       == 0) {
-      sendSystemMessage(channel._id, `${meta.displayName || meta.username} started a call`)
+      sendSystemMessage(channel._id, `${meta.displayName || meta.username} started a call`, 0, 'CHANNEL_CALL_START', [meta.displayName || meta.username])
     }
 
   }
@@ -201,7 +201,7 @@ exports.webhook.callLeft = async function (req, res, next) {
     io.to(channel._id.toString()).emit('ChannelUpdate')
     res.status(200).json({ message: 'User left call', channel })
     if (channel.meetingParticipants.length == 0) {
-      sendSystemMessage(channel._id, `The call has ended.`)
+      sendSystemMessage(channel._id, `Call ended`, 0, 'CHANNEL_CALL_END', [])
     }
 
 

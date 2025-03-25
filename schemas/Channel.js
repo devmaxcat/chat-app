@@ -42,5 +42,21 @@ const ChannelSchema = new Mongoose.Schema({
     ]
 }, { timestamps: true })
 
+const ExposableFieldsProjection = {
+    // all true?
+    _id: true,
+    owner_id: true,
+    type: true,
+    name: true,
+    recipients: true,
+    lastActiveTime: true,
+    lastRead: true,
+    lastMessage: true,
+    meetingParticipants: true,
+    createdAt: true,
+    updatedAt: true
+}
+
 const Channel = Mongoose.model("Channel", ChannelSchema)
 module.exports = Channel
+module.exports.ExposableFieldsProjection = ExposableFieldsProjection

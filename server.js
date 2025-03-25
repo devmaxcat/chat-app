@@ -114,6 +114,7 @@ io.use((socket, next) => {
 const gateway = require('./gateway');
 const { trace } = require('console');
 const Channel = require('./schemas/Channel');
+const { sendSystemMessage } = require('./api/message/message');
 io.on('connection', (socket) => {
   gateway(socket, io)
 })
@@ -163,6 +164,8 @@ process.on("unhandledRejection", err => {
   trace(err)
   server.close(() => process.exit(1))
 })
+
+sendSystemMessage('67bc85fb94a489c7ac73377b', '', 0, 'DEBUG_TEST', ['testSubstitution'])
 
 
 

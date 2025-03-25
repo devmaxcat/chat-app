@@ -1,5 +1,5 @@
 const Message = require('../../schemas/Message')
-const { User, ExposableFields } = require('../../schemas/User')
+const User = require('../../schemas/User')
 const Channel = require('../../schemas/Channel')
 const { ObjectId } = require('mongodb')
 const { io } = require('../../server')
@@ -56,9 +56,9 @@ exports.history = async (req, res, next) => {
 
   let data;
   if (req.query.cursorid && req.query.cursorid != 'null') {
-    data = await Message.find({ _id: { $lt: new ObjectId(req.query.cursorid) }, channel_id: req.query.channelid }).limit(80).populate('author', ExposableFields, User).sort({ createdAt: -1 }).lean()
+    data = await Message.find({ _id: { $lt: new ObjectId(req.query.cursorid) }, channel_id: req.query.channelid }).limit(80).populate('author', User.ExposableFields, User).sort({ createdAt: -1 }).lean()
   } else {
-    data = await Message.find({ channel_id: req.query.channelid }).limit(80).sort({ createdAt: -1 }).populate('author', ExposableFields, User).lean()
+    data = await Message.find({ channel_id: req.query.channelid }).limit(80).sort({ createdAt: -1 }).populate('author', User.ExposableFields, User).lean()
   }
 
   res.setHeader('cache-control', 'max-age=10')
@@ -67,14 +67,72 @@ exports.history = async (req, res, next) => {
 
 }
 
+exports.search = async (req, res, next) => {
+  console.log(req.query.query, new ObjectId(req.query.channelid), req.body.filters)
+  let filters = req.body.filters || {}
+  let data = await Message.aggregate([
+    {
+      $search: {
+        index: "default",
+        text: {
+          query: req.query.query,
+          path: {
+            wildcard: "*",
+          },
+        },
+      },
+    },
+    {
+      $match: {
+        author: filters.from ? new ObjectId(filters.from) : { $exists: true },
+        channel_id: new ObjectId(req.query.channelid) || { $exists: false },
+        system: { $exists: false },
+      },
+    },
+    {
+      $project: {
+        _id: true,
+        author: true,
+        channel_id: true,
+        createdAt: true,
+        media: true,
 
-exports.sendSystemMessage = async (channel_id, text_content, level = 0) => {
+        text_content: true,
+      },
+    },
+    {
+      $lookup: {
+        from: 'users',
+        localField: 'author',
+        foreignField: '_id',
+        as: 'author',
+      },
+    },
+    {
+      $unwind: {
+        "path": "$author",
+      }
+    },
+    {
+      $project: {
+        ...Message.ExposableFieldsProjection,
+        author: User.ExposableFieldsProjection
+      }
+    }
+
+  ])
+  console.log(data)
+  res.status(200).json(data)
+}
+
+
+exports.sendSystemMessage = async (channel_id, text_content, level = 0, preset, presetSubs) => {
   let user
   let author = await User.findOne({ username: 'SYS!MSGS' })
   if (!author) {
     author = await User.create({ username: 'SYS!MSGS', email: '', password: 'NO_PASSWORD' })
   }
-  let message = await (await Message.create({ channel_id, text_content, author, system: level })).populate('author', ExposableFields)
+  let message = await (await Message.create({ channel_id, text_content, author, system: level, metadata: { preset: {type: preset, values: presetSubs} } })).populate('author', User.ExposableFields)
   try {
     let channel = await Channel.findById(channel_id)
     channel.lastActiveTime = new Date().toISOString()
@@ -82,7 +140,7 @@ exports.sendSystemMessage = async (channel_id, text_content, level = 0) => {
   } catch (e) {
     // oh well
   }
- 
+
 
   io.to(message.channel_id.toString()).emit("MessageRecieved", message)
 
@@ -125,7 +183,7 @@ exports.create = async (req, res) => {
 
 
 
-  let message = await (await Message.create({ channel_id, text_content, author, media })).populate('author', ExposableFields)
+  let message = await (await Message.create({ channel_id, text_content, author, media })).populate('author', User.ExposableFields)
   let channel = await Channel.findById(channel_id)
   channel.lastActiveTime = new Date().toISOString()
   await channel.save()
