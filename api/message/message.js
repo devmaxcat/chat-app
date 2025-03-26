@@ -143,8 +143,44 @@ exports.sendSystemMessage = async (channel_id, text_content, level = 0, preset, 
 
 
   io.to(message.channel_id.toString()).emit("MessageRecieved", message)
-
+  return message._id
 }
+
+exports.edit = async (req, res) => {
+  let user = req.session?.user
+  const { message_id, text_content } = req.body
+
+  let message = Message.findById(message_id)
+  if (!message) {
+    res.status(404).json({
+      message: 'Message not found',
+      error: 'Not Found'
+    })
+    return
+  }
+  message.text_content = text_content
+  await message.save()
+  res.status(200).json(message)
+}
+
+exports.delete = async (req, res) => {
+  let user = req.session?.user
+  const { message_id } = req.body
+
+  let l = Message.findByIdAndDelete(message_id)
+  if (!l) {
+    res.status(404).json({
+      message: 'Message not found',
+      error: 'Not Found'
+    })
+    return
+  }
+  res.status(200).json({
+    message: 'Message deleted',
+    success: true
+  })
+}
+
 
 exports.create = async (req, res) => {
   let user = req.session?.user

@@ -32,7 +32,7 @@ const express = require("express")
 const app = express()
 
 app.use(cookies());
-app.use(express.json()); 
+app.use(express.json());
 
 app.use(express.urlencoded({
   extended: true
@@ -69,7 +69,7 @@ const sessionware = session({
   name: 'example.sid',
   secret: 'Replace with your secret key',
 
- 
+
   maxAge: 1000 * 60 * 60 * 7,
   rolling: true,
   domain: process.env.CORS_ALLOW_ORIGIN,
@@ -114,6 +114,7 @@ io.use((socket, next) => {
 const gateway = require('./gateway');
 const { trace } = require('console');
 const Channel = require('./schemas/Channel');
+const Message = require('./schemas/Message');
 const { sendSystemMessage } = require('./api/message/message');
 io.on('connection', (socket) => {
   gateway(socket, io)
@@ -125,8 +126,8 @@ io.on('connection', (socket) => {
 
 
 
-app.use("/proxy",async (req, res) => {
-  
+app.use("/proxy", async (req, res) => {
+
 })
 app.use("/api/auth", require("./api/auth/route"))
 app.use("/api/profile", require("./api/profile/route"))
@@ -150,22 +151,35 @@ server.listen(PORT, () => {
 
 
 
-  Channel.updateMany({meetingParticipants: {$exists: true, $ne: []}}, { meetingParticipants: [] }).then((res) => {
+  Channel.updateMany({ meetingParticipants: { $exists: true, $ne: [] } }, { meetingParticipants: [] }).then((res) => {
     console.log(res)
   }).catch((err) => {
     console.log(err)
   })
- 
+
   console.log(`listening on ${PORT}`);
 });
 
 process.on("unhandledRejection", err => {
- 
+
   trace(err)
   server.close(() => process.exit(1))
 })
 
-sendSystemMessage('67bc85fb94a489c7ac73377b', '', 0, 'DEBUG_TEST', ['testSubstitution'])
+sendSystemMessage('67bc85fb94a489c7ac73377b', '', 0, 'DEBUG_TEST', ['testSubstitution']).then((msgid) => {
+  Channel.findById('67bc85fb94a489c7ac73377b').then((channel) => {
+    Message.findById(channel.metadata.local.debugMsgId).then((msg) => {
+      msg.metadata.preset = { type: 'DEBUG_TEST_SECOND' }
+      msg.save()
+    }).catch((err) => {
+      
+    })
+    console.log(channel)
+    channel.metadata = { local: { debugMsgId: msgid } }
+    channel.save()
+  })
+})
+
 
 
 

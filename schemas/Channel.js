@@ -39,7 +39,13 @@ const ChannelSchema = new Mongoose.Schema({
             type: ObjectId,
             ref: 'User',
         }
-    ]
+    ],
+    metadata: {
+        type: {
+            local: {},
+        },
+       
+    }
 }, { timestamps: true })
 
 const ExposableFieldsProjection = {

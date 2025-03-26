@@ -6,7 +6,7 @@ const { User, ExposableFields } = require('../../schemas/User')
 
 const { io } = require('../../server')
 const Message = require('../../schemas/Message')
-const { sendSystemMessage } = require('../message/message')
+const { sendSystemMessage, edit } = require('../message/message')
 
 // this might need pagination eventually...
 exports.get = async (req, res, next) => { // Gets a logged in user's channels that they are a recieptient of
@@ -89,7 +89,7 @@ exports.update = async function (req, res, next) {
 
     const channel = await Channel.updateOne({ _id: channelid }, { name })
     res.status(200).json({ channel, message: 'Channel Updated.' })
-    sendSystemMessage(channelid, `${user.displayName || user.username} has renamed the chat to ${name}.`, 0, 'CHANNEL_RENAME', [user.displayName || user.username, name ])
+    sendSystemMessage(channelid, `${user.displayName || user.username} has renamed the chat to ${name}.`, 0, 'CHANNEL_RENAME', [user.displayName || user.username, name])
   } catch {
     res.status(500).json({ error: 'Internal Server Error', message: 'Something went wrong.' })
   }
@@ -177,13 +177,17 @@ exports.webhook.callJoined = async function (req, res, next) {
     const channel = await Channel.findOne({ _id: roomName })
     let originalLength = channel.meetingParticipants.length
     channel.meetingParticipants.push(new ObjectId(externalUserId))
-    await channel.save()
+
     io.to(channel._id.toString()).emit('ChannelUpdate')
     res.status(200).json({ message: 'User joined call', channel })
+    let callStartedMessageId;
     if (originalLength
       == 0) {
-      sendSystemMessage(channel._id, `${meta.displayName || meta.username} started a call`, 0, 'CHANNEL_CALL_START', [meta.displayName || meta.username])
+      callStartedMessageId = sendSystemMessage(channel._id, `${meta.name} started a call`, 0, 'CHANNEL_CALL_START', [meta.name])
     }
+    channel.metadata = {local: {callStartedMessageId: callStartedMessageId}}
+
+    await channel.save()
 
   }
   catch (err) {
@@ -201,7 +205,13 @@ exports.webhook.callLeft = async function (req, res, next) {
     io.to(channel._id.toString()).emit('ChannelUpdate')
     res.status(200).json({ message: 'User left call', channel })
     if (channel.meetingParticipants.length == 0) {
-      sendSystemMessage(channel._id, `Call ended`, 0, 'CHANNEL_CALL_END', [])
+      Message.findById(channel?.metadata?.local?.callStartedMessageId).then((msg) => {
+        msg.metadata.preset = { type: 'CHANNEL_CALL_END' }
+        msg.save()
+      }).catch((err) => {
+        // oh well
+      })
+      //sendSystemMessage(channel._id, `Call ended`, 0, 'CHANNEL_CALL_END', [])
     }
 
 
@@ -306,7 +316,7 @@ exports.call = async function (req, res, next) { // returns a token to create or
           body: JSON.stringify({
 
             "roomName": channelid,
-            "name": user.displayName,
+            "name": user.displayName || user.username,
             "meta": JSON.stringify(user),
             "externalUserId": user._id,
           })

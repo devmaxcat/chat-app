@@ -37,15 +37,26 @@ const MessageSchema = new Mongoose.Schema({
         default: undefined // 0 = notification, single line of text, no pfp. 1 = message from application. 2 = message from us (company).
     },
     metadata: {
-        preset: { // allows you to set a preset which corrosponds to the text that should be displayed instead of the text_content
-            type: {
-                type: String
+        type: {
+            preset: { // allows you to set a preset which corrosponds to the text that should be displayed instead of the text_content
+                type: {
+                    type: String,
+                    required: false,
+                },
+                values: {
+                    type: Array,
+                    required: false,
+                }
+
             },
-            values: {
-                type: Array
-                
+            local: {
+                type: Object,
+                required: false,
+
             }
         },
+        required: false
+
     }
 }, { timestamps: true })
 
