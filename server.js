@@ -166,19 +166,6 @@ process.on("unhandledRejection", err => {
   server.close(() => process.exit(1))
 })
 
-sendSystemMessage('67bc85fb94a489c7ac73377b', '', 0, 'DEBUG_TEST', ['testSubstitution']).then((msgid) => {
-  Channel.findById('67bc85fb94a489c7ac73377b').then((channel) => {
-    Message.findById(channel.metadata.local.debugMsgId).then((msg) => {
-      msg.metadata.preset = { type: 'DEBUG_TEST_SECOND' }
-      msg.save()
-    }).catch((err) => {
-      
-    })
-    console.log(channel)
-    channel.metadata = { local: { debugMsgId: msgid } }
-    channel.save()
-  })
-})
 
 
 

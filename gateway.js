@@ -16,7 +16,6 @@ module.exports = async (socket, io) => {
   let sessionData = socket.request.session.user;
   let user = socket.request.session.user;
 
-
   let channels = await Channel.find({ recipients: new ObjectId(user._id) })
   channels.forEach((channel) => {
     socket.join(channel._id.toString()) // join channels
